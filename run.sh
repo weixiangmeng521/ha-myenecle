@@ -79,7 +79,7 @@ usage=$(echo "$mypage_response" | sed -n 's/.*<li><span>&#x3054;&#x4F7F;&#x7528;
 echo "用气量: $usage"
 
 
-if [ -n "$decoded" ]; then
+if test -n "$decoded"; then
   # 有错误，推送错误信息
   curl -X POST "$HA_URL/api/states/sensor.enecle_usage" \
     -H "Authorization: Bearer $HA_TOKEN" \
