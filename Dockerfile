@@ -3,8 +3,10 @@ FROM $BUILD_FROM
 
 # Install requirements for add-on
 RUN \
-    apk add --no-cache 
-
+    apk add --no-cache \
+        perl \
+        curl
+        
 LABEL \
     io.hass.version="VERSION" \
     io.hass.type="addon" \
