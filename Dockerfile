@@ -15,4 +15,4 @@ COPY run.sh /
 RUN chmod a+x /run.sh
 
 # 每半小时运行一次 run.sh
-CMD [ "sh", "-c", "while true; do /run.sh; sleep 1800; done"
+CMD [ "sh", "-c", "while true; do /run.sh; sleep 1800; done"]
