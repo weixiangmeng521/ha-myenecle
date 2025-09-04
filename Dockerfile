@@ -2,10 +2,13 @@ ARG BUILD_FROM
 FROM $BUILD_FROM
 
 # Install requirements for add-on
-RUN \
-    apk add --no-cache \
-        perl \
-        curl
+RUN apk add --no-cache \
+    bash \
+    curl \
+    perl \
+    perl-app-cpanminus \
+    && cpanm HTML::Entities
+
         
 LABEL \
     io.hass.version="VERSION" \
