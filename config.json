@@ -1,0 +1,32 @@
+{
+  "name": "Enecle エネクル",
+  "description": "Unofficial add-on for Enecle (エネクル) gas monitoring service.",
+  "version": "1.0.1",
+  "slug": "enecle",
+  "init": false,
+  "arch": [
+    "aarch64",
+    "amd64",
+    "armhf",
+    "armv7",
+    "i386"
+  ],
+  "startup": "services",
+  "options": {
+    "email": true,
+    "password": true
+  },
+  "schema": {
+    "email": {
+      "type": "string",
+      "description": "Enecle (エネクル) account email."
+    },
+    "password": {
+      "type": "string",
+      "description": "Enecle (エネクル) account password."
+    }
+  },
+  "ports": {
+    "8000/tcp": 8123  
+  }
+}
