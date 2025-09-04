@@ -23,11 +23,7 @@ set -e
 
 # 定义兼容日志函数
 log_info() {
-    if command -v bashio >/dev/null 2>&1; then
-        bashio::log.info "$1"
-    else
-        echo "[INFO] $1"
-    fi
+    bashio::log.info "$1"
 }
 
 
@@ -79,16 +75,17 @@ usage=$(echo "$mypage_response" | sed -n 's/.*<li><span>&#x3054;&#x4F7F;&#x7528;
 echo "用气量: $usage"
 
 
-if test -n "$decoded"; then
-  # 有错误，推送错误信息
-  curl -X POST "$HA_URL/api/states/sensor.enecle_usage" \
-    -H "Authorization: Bearer $HA_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "{\"state\": \"error\", \"attributes\": {\"friendly_name\": \"Enecle usage\", \"error_msg\": \"$decoded\"}}"
+# 判断是否有错误消息
+if [ -n "$decoded" ]; then
+    # 有错误
+    curl -X POST "$HA_URL/api/states/sensor.enecle_usage" \
+      -H "Authorization: Bearer $HA_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "{\"state\": \"error\", \"attributes\": {\"friendly_name\": \"Enecle usage\", \"error_msg\": \"$decoded\"}}"
 else
-  # 正常推送用气量
-  curl -X POST "$HA_URL/api/states/sensor.enecle_usage" \
-    -H "Authorization: Bearer $HA_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "{\"state\": \"$usage\", \"attributes\": {\"unit_of_measurement\": \"m3\", \"friendly_name\": \"Enecle usage\"}}"
+    # 正常推送
+    curl -X POST "$HA_URL/api/states/sensor.enecle_usage" \
+      -H "Authorization: Bearer $HA_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "{\"state\": \"$usage\", \"attributes\": {\"unit_of_measurement\": \"m3\", \"friendly_name\": \"Enecle usage\"}}"
 fi
