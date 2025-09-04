@@ -9,11 +9,11 @@
 # Declare variables
 declare message
 
-# ## Get the 'message' key from the user config options.
-# message=$(bashio::config 'message')
+## Get the 'message' key from the user config options.
+message=$(bashio::config 'message')
 
-# ## Print the message the user supplied, defaults to "Hello World..."
-# bashio::log.info "${message:="Hello World..."}"
+## Print the message the user supplied, defaults to "Hello World..."
+bashio::log.info "${message:="Hello World..."}"
 
 ## Run your program
-python ./rootfs/usr/bin/__init__.py
+python3 /usr/bin/__init__.py
