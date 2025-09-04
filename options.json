@@ -1,0 +1,10 @@
+{
+    "options": {
+        "username": true,
+        "password": true
+    },
+    "schema": {
+        "username": "str",
+        "password": "str"
+    }
+}
