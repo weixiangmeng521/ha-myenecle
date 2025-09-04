@@ -34,5 +34,5 @@ After starting, access the HTTP server at [http://localhost:8000](http://localho
 See `config.yaml` for available options.
 
 ## License
-
-Unofficial project. Not affiliated
+This project is licensed under the Apache License, Version 2.0.  
+See the [LICENSE](LICENSE) file for details.
