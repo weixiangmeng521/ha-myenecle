@@ -1,6 +1,6 @@
 {
     "name": "My Enecle Add-on",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "slug": "myenecle",
     "description": "Unofficial Enecle gas monitoring add-on.",
     "startup": "application",
