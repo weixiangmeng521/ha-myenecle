@@ -6,8 +6,8 @@ RUN apk add --no-cache \
     bash \
     curl \
     perl \
-    perl-app-cpanminus \
-    && cpanm HTML::Entities
+    perl-html-entities \
+    perl-html-parser
 
         
 LABEL \
