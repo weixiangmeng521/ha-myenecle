@@ -15,10 +15,8 @@ options:
   password: true
 schema:
   email:
-    type: string
-    description: "Enecle (エネクル) account email."
+    type: str
   password:
-    type: string
-    description: "Enecle (エネクル) account password."
+    type: str
 ports:
   8000/tcp: 8123
