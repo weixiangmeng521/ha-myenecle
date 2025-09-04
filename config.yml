@@ -11,11 +11,10 @@ arch:
   - i386
 startup: services
 options:
-  logins: []
+  username: ""
+  password: ""
 schema:
-  logins:
-    - username: str
-      password: password
-      password_pre_hashed: "bool?"
+  username: str
+  password: password
 ports:
   8000/tcp: 8123
