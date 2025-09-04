@@ -6,11 +6,13 @@
 
 # Declare variables
 declare message
+declare password
+declare HA_TOKEN
+declare cookie_file
 
 ## Get the 'message' key from the user config options.
 username=$(bashio::config 'username')
 password=$(bashio::config 'password')
-# 你的 Home Assistant 地址和 token
 HA_TOKEN=$(bashio::config 'long_live_token')
 
 # Temporary file to store cookies
@@ -19,7 +21,7 @@ cookie_file="/tmp/enecle_cookies.txt"
 # Your Home Assistant URL
 HA_URL="http://homeassistant:8123"
 
-set -e
+# set -e
 
 # 定义兼容日志函数
 log_info() {
@@ -72,7 +74,7 @@ mypage_response=$(curl -s -b "$cookie_file" \
 log_info "Fetched MyPageTop..."
 
 usage=$(echo "$mypage_response" | sed -n 's/.*<li><span>&#x3054;&#x4F7F;&#x7528;&#x91CF;<\/span><span><em>\([^<]*\)<\/em>m3<\/span><\/li>.*/\1/p')
-echo "用气量: $usage"
+log_info "gas usage: $usage"
 
 
 # 判断是否有错误消息
