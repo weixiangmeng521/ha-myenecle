@@ -13,8 +13,10 @@ startup: services
 options:
   username: ""
   password: ""
+  long_live_token: ""
 schema:
   username: str
   password: password
+  long_live_token: str
 ports:
   8444/tcp: 8444
