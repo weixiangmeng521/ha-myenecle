@@ -14,6 +14,5 @@ LABEL \
 COPY run.sh /
 RUN chmod a+x /run.sh
 
-# Copy root filesystem
-COPY rootfs /
+CMD [ "/run.sh" ]
 
