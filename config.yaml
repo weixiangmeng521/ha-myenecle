@@ -1,0 +1,11 @@
+name: "Enecle エネクル"
+description: "Unofficial add-on for Enecle (エネクル) solar panel monitoring"
+version: "1.0.0"
+slug: "enecle"
+init: false
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
