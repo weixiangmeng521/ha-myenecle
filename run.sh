@@ -16,4 +16,4 @@ declare message
 # bashio::log.info "${message:="Hello World..."}"
 
 ## Run your program
-python /usr/bin/__init__.py
+python ./rootfs/usr/bin/__init__.py
