@@ -17,4 +17,4 @@ schema:
   username: str
   password: password
 ports:
-  8000/tcp: 8123
+  8444/tcp: 8444
