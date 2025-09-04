@@ -1,5 +1,5 @@
 name: "Enecle エネクル"
-description: "Unofficial add-on for Enecle (エネクル) solar panel monitoring"
+description: "Unofficial add-on for Enecle (エネクル) gas monitoring service."
 version: "1.0.0"
 slug: "enecle"
 init: false
