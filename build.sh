@@ -11,7 +11,7 @@ OUTPUT_DIR="build"
 mkdir -p "$OUTPUT_DIR"
 
 # 支持架构列表
-ARCHS=("arm64")   # amd64 -> Intel/AMD, arm64 -> Raspberry Pi 4 / aarch64
+ARCHS=("amd64")   # amd64 -> Intel/AMD, arm64 -> Raspberry Pi 4 / aarch64
 
 # GOOS
 GOOS=linux
