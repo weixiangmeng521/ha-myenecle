@@ -10,7 +10,6 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"regexp"
-	"time"
 
 	"golang.org/x/net/html"
 )
@@ -33,13 +32,13 @@ func main() {
 	// 启动时先跑一次（可删）
 	task(username, password, haToken)
 
-	ticker := time.NewTicker(15 * time.Minute)
-	defer ticker.Stop()
+	// ticker := time.NewTicker(15 * time.Minute)
+	// defer ticker.Stop()
 
-	// 循环执行
-	for range ticker.C {
-		task(username, password, haToken)
-	}
+	// // 循环执行
+	// for range ticker.C {
+	// 	task(username, password, haToken)
+	// }
 }
 
 func task(username string, password string, haToken string) {
@@ -128,9 +127,18 @@ func task(username string, password string, haToken string) {
 
 	res, err := client.Do(req)
 	if err != nil {
-		log.Fatal("failed to push to HA:", err)
+		log.Println("Ops! something wrong with mqtt:")
+		log.Println("Failed to push to HA:", err)
+		return
 	}
-	_, _ = io.ReadAll(res.Body)
+	responseData, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Println(string(err.Error()))
+		log.Println("Failed to push to HA:", err)
+		return
+	}
+	log.Println(string(responseData))
+
 	defer res.Body.Close()
 	log.Println("Updated Home Assistant sensor.")
 }
