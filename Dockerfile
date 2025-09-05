@@ -22,6 +22,8 @@
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
+RUN echo "Building for architecture: $BUILD_ARCH"
+
 # Execute during the build of the image
 ARG APP_VERSION BUILD_ARCH
 RUN \
@@ -32,4 +34,4 @@ RUN \
     && ls -lh /usr/bin/myenecle
 
 # 默认运行 myenecle
-ENTRYPOINT ["/usr/bin/myenecle"]
+CMD [ "/run.sh" ]
