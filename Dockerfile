@@ -13,10 +13,10 @@ LABEL \
 WORKDIR /data
 
 # 拷贝二进制和启动脚本
-COPY build/enecle-linux-arm64 ./build/enecle-linux-arm64
+COPY build/enecle-linux-arm64 /data/build/enecle-linux-arm64
 COPY run.sh /run.sh
 
-RUN chmod +x ./build/enecle-linux-arm64 /run.sh
+RUN chmod +x /data/build/enecle-linux-arm64 /run.sh
 
 # 设置启动命令
 CMD [ "/run.sh" ]
