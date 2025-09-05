@@ -33,5 +33,8 @@ RUN \
     && echo "✅ myenecle downloaded" \
     && ls -lh /usr/bin/myenecle
 
+
+COPY run.sh /run.sh
+RUN chmod +x /enecle-linux-amd64 /run.sh    
 # 默认运行 myenecle
 CMD [ "/run.sh" ]
