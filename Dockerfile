@@ -35,6 +35,5 @@ RUN \
 
 
 COPY run.sh /run.sh
-RUN chmod +x /enecle-linux-amd64 /run.sh    
 # 默认运行 myenecle
 CMD [ "/run.sh" ]
