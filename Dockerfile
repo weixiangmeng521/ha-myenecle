@@ -9,16 +9,11 @@ LABEL \
     io.hass.type="addon" \
     io.hass.arch="armhf|aarch64|i386|amd64"
 
-# 创建工作目录
-WORKDIR /data
-
 # 拷贝二进制和启动脚本
-COPY build/enecle-linux-arm64 ./build/enecle-linux-arm64
-WORKDIR /data
-
+COPY build/enecle-linux-arm64 /enecle-linux-arm64
 COPY run.sh /run.sh
 
-RUN chmod +x /data/build/enecle-linux-arm64 /run.sh
+RUN chmod +x /enecle-linux-arm64 /run.sh
 
 # 设置启动命令
 CMD [ "/run.sh" ]
