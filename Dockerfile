@@ -25,6 +25,11 @@ FROM $BUILD_FROM
 # Execute during the build of the image
 ARG APP_VERSION BUILD_ARCH
 RUN \
-    curl -sSLf -o /usr/bin/myenecle \
-    "https://github.com/weixiangmeng521/ha-myenecle/releases/download/${APP_VERSION}/enecle-linux-${BUILD_ARCH}"
+    curl -o /usr/bin/myenecle \
+    "https://github.com/weixiangmeng521/ha-myenecle/releases/download/${APP_VERSION}/enecle-linux-${BUILD_ARCH}" \
+    && chmod +x /usr/bin/myenecle \
+    && echo "✅ myenecle downloaded" \
+    && ls -lh /usr/bin/myenecle
 
+# 默认运行 myenecle
+ENTRYPOINT ["/usr/bin/myenecle"]
