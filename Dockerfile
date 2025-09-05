@@ -31,6 +31,10 @@ LABEL \
 
 # Execute during the build of the image
 ARG APP_VERSION BUILD_ARCH
+
+RUN echo "going to download bin file."
+RUN echo "https://github.com/weixiangmeng521/ha-myenecle/releases/download/${APP_VERSION}/enecle-linux-${BUILD_ARCH}"
+
 RUN \
     curl -L -o /usr/bin/myenecle \
     "https://github.com/weixiangmeng521/ha-myenecle/releases/download/${APP_VERSION}/enecle-linux-${BUILD_ARCH}" \
