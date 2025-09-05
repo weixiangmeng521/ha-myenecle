@@ -24,6 +24,11 @@ FROM $BUILD_FROM
 
 RUN echo "Building for architecture: $BUILD_ARCH"
 
+LABEL \
+    io.hass.version="VERSION" \
+    io.hass.type="addon" \
+    io.hass.arch="armhf|aarch64|i386|amd64"
+
 # Execute during the build of the image
 ARG APP_VERSION BUILD_ARCH
 RUN \
@@ -32,7 +37,6 @@ RUN \
     && chmod +x /usr/bin/myenecle \
     && echo "✅ myenecle downloaded" \
     && ls -lh /usr/bin/myenecle
-
 
 COPY run.sh /run.sh
 RUN chmod +x /run.sh
