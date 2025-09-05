@@ -13,7 +13,9 @@ LABEL \
 WORKDIR /data
 
 # 拷贝二进制和启动脚本
-COPY build/enecle-linux-arm64 /data/build/enecle-linux-arm64
+COPY build/enecle-linux-arm64 ./build/enecle-linux-arm64
+WORKDIR /data
+
 COPY run.sh /run.sh
 
 RUN chmod +x /data/build/enecle-linux-arm64 /run.sh
