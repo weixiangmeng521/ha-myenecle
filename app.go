@@ -10,9 +10,12 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"regexp"
+	"time"
 
 	"golang.org/x/net/html"
 )
+
+const HA_URL = "http://homeassistant.local:8123"
 
 func main() {
 	var username string
@@ -23,12 +26,23 @@ func main() {
 	flag.StringVar(&haToken, "t", "", "-t long live token")
 	flag.Parse()
 
-	haURL := "http://homeassistant:8123"
-
 	if username == "" || password == "" || haToken == "" {
 		log.Fatal("missing USERNAME, PASSWORD, HA_TOKEN env")
 	}
 
+	// 启动时先跑一次（可删）
+	task(username, password, haToken)
+
+	ticker := time.NewTicker(15 * time.Minute)
+	defer ticker.Stop()
+
+	// 循环执行
+	for range ticker.C {
+		task(username, password, haToken)
+	}
+}
+
+func task(username string, password string, haToken string) {
 	jar, _ := cookiejar.New(nil)
 	client := &http.Client{Jar: jar}
 
@@ -39,7 +53,7 @@ func main() {
 		log.Fatal("failed to fetch login page:", err)
 	}
 	body, _ := io.ReadAll(loginPage.Body)
-	loginPage.Body.Close()
+	defer loginPage.Body.Close()
 
 	token := extractToken(string(body))
 	log.Println("Fetched token:", token)
@@ -108,7 +122,7 @@ func main() {
 	}
 
 	payload := fmt.Sprintf(`{"state":"%s","attributes":{%s}}`, state, attrs)
-	req, _ = http.NewRequest("POST", haURL+"/api/states/sensor.enecle_usage", bytes.NewBuffer([]byte(payload)))
+	req, _ = http.NewRequest("POST", HA_URL+"/api/states/sensor.enecle_usage", bytes.NewBuffer([]byte(payload)))
 	req.Header.Set("Authorization", "Bearer "+haToken)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -117,7 +131,7 @@ func main() {
 		log.Fatal("failed to push to HA:", err)
 	}
 	_, _ = io.ReadAll(res.Body)
-	res.Body.Close()
+	defer res.Body.Close()
 	log.Println("Updated Home Assistant sensor.")
 }
 
