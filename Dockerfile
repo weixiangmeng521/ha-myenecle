@@ -2,22 +2,21 @@ ARG BUILD_FROM
 FROM $BUILD_FROM
 
 # Install requirements for add-on
-RUN apk add --no-cache \
-    bash \
-    curl \
-    perl \
-    perl-html-entities \
-    perl-html-parser
-
+RUN apk add --no-cache 
         
 LABEL \
     io.hass.version="VERSION" \
     io.hass.type="addon" \
     io.hass.arch="armhf|aarch64|i386|amd64"
 
-# Copy data for add-on
-COPY run.sh /
-RUN chmod a+x /run.sh
+# 创建工作目录
+WORKDIR /data
 
-# 每半小时运行一次 run.sh
-CMD [ "sh", "-c", "while true; do /run.sh; sleep 1800; done"]
+# 拷贝二进制和启动脚本
+COPY build/enecle-linux-arm64 ./build/enecle-linux-arm64
+COPY run.sh ./run.sh
+
+RUN chmod +x ./build/enecle-linux-arm64 ./run.sh
+
+# 设置启动命令
+CMD [ "/run.sh" ]
