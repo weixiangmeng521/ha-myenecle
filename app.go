@@ -21,7 +21,7 @@ func main() {
 	haToken := os.Getenv("HA_TOKEN")
 	haURL := "http://homeassistant:8123"
 
-	if username == "" || password == "" || haToken == "" || haURL == "" {
+	if username == "" || password == "" || haToken == "" {
 		log.Fatal("missing USERNAME, PASSWORD, HA_TOKEN env")
 	}
 
