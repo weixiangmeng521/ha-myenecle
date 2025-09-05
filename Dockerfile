@@ -23,8 +23,8 @@ ARG BUILD_FROM
 FROM $BUILD_FROM
 
 # Execute during the build of the image
-ARG TEMPIO_VERSION BUILD_ARCH
+ARG APP_VERSION BUILD_ARCH
 RUN \
-    curl -sSLf -o /usr/bin/tempio \
-    "https://github.com/weixiangmeng521/ha-myenecle/releases/download/${TEMPIO_VERSION}/enecle-linux-${BUILD_ARCH}"
+    curl -sSLf -o /usr/bin/myenecle \
+    "https://github.com/weixiangmeng521/ha-myenecle/releases/download/${APP_VERSION}/enecle-linux-${BUILD_ARCH}"
 
