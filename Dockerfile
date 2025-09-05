@@ -39,6 +39,6 @@ RUN \
     && ls -lh /usr/bin/myenecle
 
 COPY data/run.sh /
-
+RUN chmod +x /run.sh
 # 默认运行 myenecle
 CMD [ "/run.sh" ]
