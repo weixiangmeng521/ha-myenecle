@@ -32,7 +32,7 @@ LABEL \
 # Execute during the build of the image
 ARG APP_VERSION BUILD_ARCH
 RUN \
-    curl -o /usr/bin/myenecle \
+    curl -L -o /usr/bin/myenecle \
     "https://github.com/weixiangmeng521/ha-myenecle/releases/download/${APP_VERSION}/enecle-linux-${BUILD_ARCH}" \
     && chmod +x /usr/bin/myenecle \
     && echo "✅ myenecle downloaded" \
