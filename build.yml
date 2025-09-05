@@ -11,4 +11,4 @@ labels:
   org.opencontainers.image.source: "https://github.com/weixiangmeng521/ha-myenecle"
   org.opencontainers.image.licenses: "Apache License 2.0"
 args:
-  TEMPIO_VERSION: "1.1.1"
+  TEMPIO_VERSION: "1.0.1"
