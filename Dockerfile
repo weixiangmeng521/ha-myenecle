@@ -26,5 +26,5 @@ FROM $BUILD_FROM
 ARG TEMPIO_VERSION BUILD_ARCH
 RUN \
     curl -sSLf -o /usr/bin/tempio \
-    "https://github.com/weixiangmeng521/ha-myenecle/releases/download/${TEMPIO_VERSION}/tempio_${BUILD_ARCH}"
+    "https://github.com/weixiangmeng521/ha-myenecle/releases/download/${TEMPIO_VERSION}/enecle-linux-${BUILD_ARCH}"
 

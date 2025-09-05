@@ -26,19 +26,19 @@ jobs:
           mkdir -p build
           case "${{ matrix.arch }}" in
             amd64)
-              GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/enecle-linux-amd64 .
+              GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/tempio_amd64 .
               ;;
             arm64)
-              GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o build/enecle-linux-arm64 .
+              GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o build/tempio_aarch64 .
               ;;
             arm)
-              GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 go build -o build/enecle-linux-arm .
+              GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 go build -o build/tempio_arm .
               ;;
           esac
-
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
           files: build/*
+          
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
