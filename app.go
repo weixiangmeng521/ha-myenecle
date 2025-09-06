@@ -118,7 +118,7 @@ func task(username string, password string, haToken string) {
 	log.Println("Annual usage map:", string(annualUsageMap))
 	log.Println("Annual usage:", extractAnnualUsage)
 
-	if err := pushAllEnergySensors(client, HA_URL, haToken, usage, cost, extractAnnualUsage); err != nil {
+	if err := pushAllEnergySensors(client, haToken, usage, cost, extractAnnualUsage); err != nil {
 		log.Fatal(err)
 	}
 }
