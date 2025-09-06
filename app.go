@@ -410,9 +410,11 @@ func pushStatistics(client *http.Client, haURL, haToken, statisticID string, usa
 
 	// 发送请求
 	body, _ := json.Marshal(payload)
-	url := haURL + "/statistics"
+	url := haURL + "/api/statistics"
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	log.Println("Request: ", url)
+
 	req.Header.Set("Authorization", "Bearer "+haToken)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -435,21 +437,25 @@ func pushStatistics(client *http.Client, haURL, haToken, statisticID string, usa
 // pushAllEnergySensors 推送燃气用量、费用、年度累计三个传感器
 func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annualUsage float64, usages []MonthlyUsage) error {
 	// 燃气用量
+	fmt.Println("Tring to push enecle_last_mon_usage")
 	if err := pushEnergySensor(client, haToken, "sensor.enecle_last_mon_usage", usage, "m³", "gas"); err != nil {
 		return err
 	}
 
 	// 燃气费用
+	fmt.Println("Tring to push enecle_last_mon_cost")
 	if err := pushEnergySensor(client, haToken, "sensor.enecle_last_mon_cost", cost, "JPY", "monetary"); err != nil {
 		return err
 	}
 
 	// 年度累计燃气量
+	fmt.Println("Tring to push enecle_annual_usage")
 	if err := pushEnergySensor(client, haToken, "sensor.enecle_annual_usage", annualUsage, "m³", "gas"); err != nil {
 		return err
 	}
 
 	// 上传到 Home Assistant 统计 API
+	fmt.Println("Tring to push enecle_usage")
 	err := pushStatistics(client, HA_URL, haToken, "sensor.enecle_usage", usages)
 	if err != nil {
 		return err
