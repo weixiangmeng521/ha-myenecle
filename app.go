@@ -152,19 +152,38 @@ func extractUsage(htmlBody string) float64 {
 	return 0
 }
 
-// extractUsage 提取 HTML 中 <h3> 标签内的数字
+// // extractUsage 提取 HTML 中 <h3> 标签内的数字
+// // extractCost 提取 HTML 中 <h3> 标签内的数字
+// func extractCost(htmlBody string) float64 {
+// 	re := regexp.MustCompile(`<h3 class="idxprc__sum">([\d,]+)円</h3>`)
+// 	m := re.FindStringSubmatch(htmlBody)
+// 	if len(m) > 1 {
+// 		// 去掉千位分隔符
+// 		numStr := strings.ReplaceAll(m[1], ",", "")
+// 		f, err := strconv.ParseFloat(numStr, 64)
+// 		if err != nil {
+// 			fmt.Println("Convert err:", err)
+// 			return 0
+// 		}
+
+// 		fmt.Println("float64:", f)
+// 		return f
+// 	}
+// 	return 0
+// }
+
+// extractCost 提取 HTML 中 <h3> 标签内的数字
 func extractCost(htmlBody string) float64 {
 	re := regexp.MustCompile(`<h3 class="idxprc__sum">([\d,]+)円</h3>`)
 	m := re.FindStringSubmatch(htmlBody)
 	if len(m) > 1 {
-		// 转换为 float64
-		f, err := strconv.ParseFloat(m[1], 64)
+		// 去掉千位分隔符
+		numStr := strings.ReplaceAll(m[1], ",", "")
+		f, err := strconv.ParseFloat(numStr, 64)
 		if err != nil {
-			fmt.Println("Convert err", err)
+			fmt.Println("Convert err:", err)
 			return 0
 		}
-
-		fmt.Println("float64:", f)
 		return f
 	}
 	return 0
