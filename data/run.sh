@@ -14,5 +14,5 @@ while true; do
     # excute
     /usr/bin/myenecle -u "$username" -p "$password" -t "$haToken"
 
-    sleep 1000
+    sleep 3600
 done
