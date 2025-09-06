@@ -111,15 +111,16 @@ func task(username string, password string, haToken string) {
 	usage := extractUsage(string(mpbody))
 	cost := extractCost(string(mpbody))
 	annualUsageMap := extractAnnualUsageMap(string(mpbody))
-	extractAnnualUsage := extractAnnualUsage(string(mpbody))
+	usages, total := extractAnnualUsages(string(mpbody))
 
 	log.Println("Gas usage:", usage)
 	log.Println("Gas cost:", cost)
-	log.Println("Annual usage map:", string(annualUsageMap))
-	log.Println("Annual usage:", extractAnnualUsage)
+	log.Println("Annual usage map:", annualUsageMap)
+	log.Println("Annual usage statics:", usages)
+	log.Println("Annual usage:", total)
 
-	if err := pushAllEnergySensors(client, haToken, usage, cost, extractAnnualUsage); err != nil {
-		log.Fatal(err)
+	if err := pushAllEnergySensors(client, haToken, usage, cost, total, usages); err != nil {
+		log.Println("Push message to sensor err: ", err)
 	}
 }
 
@@ -301,20 +302,153 @@ func pushEnergySensor(client *http.Client, haToken, entity string, state float64
 	return nil
 }
 
+// -----------------------------
+// 数据结构
+// -----------------------------
+
+type MonthlyUsage struct {
+	Month string  `json:"month"`
+	Value float64 `json:"value"`
+}
+
+// extractAnnualUsages 提取每月用量 + 计算总和
+func extractAnnualUsages(htmlBody string) ([]MonthlyUsage, float64) {
+	result := getAnnualUsagesData(htmlBody) // 你已有的函数，返回 map[string]interface{}
+	var total float64
+	var usages []MonthlyUsage
+
+	// 提取 labels (月份)
+	labels, ok := result["labels"].([]interface{})
+	if !ok {
+		return usages, 0
+	}
+
+	// 提取 datasets
+	datasets, ok := result["datasets"].([]interface{})
+	if !ok || len(datasets) == 0 {
+		return usages, 0
+	}
+	first, ok := datasets[0].(map[string]interface{})
+	if !ok {
+		return usages, 0
+	}
+	dataList, ok := first["data"].([]interface{})
+	if !ok {
+		return usages, 0
+	}
+
+	// 遍历每月数据
+	for i, v := range dataList {
+		var val float64
+		switch t := v.(type) {
+		case float64:
+			val = t
+		case string:
+			f, err := strconv.ParseFloat(strings.ReplaceAll(t, ",", ""), 64)
+			if err == nil {
+				val = f
+			}
+		}
+		if i < len(labels) {
+			monthStr, _ := labels[i].(string)
+			usages = append(usages, MonthlyUsage{
+				Month: monthStr,
+				Value: val,
+			})
+		}
+		total += val
+	}
+
+	return usages, total
+
+}
+
+// -----------------------------
+
+// 工具函数：月份字符串转数字
+// -----------------------------
+func monthToNumber(m string) int {
+	m = strings.TrimSuffix(m, "月")
+	num, _ := strconv.Atoi(m)
+	return num
+}
+
+// -----------------------------
+// 上传到 Home Assistant 统计接口
+// -----------------------------
+func pushStatistics(client *http.Client, haURL, haToken, statisticID string, usages []MonthlyUsage) error {
+	// 生成 metadata
+	payload := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"statistic_id":        statisticID,
+			"unit_of_measurement": "m³",
+			"has_mean":            false,
+			"has_sum":             true,
+			"name":                "Enecle Gas Usage",
+		},
+	}
+
+	// 生成 stats
+	var stats []map[string]interface{}
+	var sum float64
+	for _, u := range usages {
+		sum += u.Value
+
+		// 假设 u.Month 是 "3月" → 转换为具体时间戳 (这里先简化)
+		// 实际最好映射成 "2025-03-01T00:00:00+09:00"
+		start := fmt.Sprintf("2025-%02d-01T00:00:00+09:00", monthToNumber(u.Month))
+
+		stats = append(stats, map[string]interface{}{
+			"start": start,
+			"state": u.Value,
+			"sum":   sum,
+		})
+	}
+	payload["stats"] = stats
+
+	// POST 请求
+	body, _ := json.Marshal(payload)
+	url := haURL + "/statistics"
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	req.Header.Set("Authorization", "Bearer "+haToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to push statistics: %w", err)
+	}
+	defer res.Body.Close()
+
+	respBody, _ := io.ReadAll(res.Body)
+	log.Println("HA Response:", res.Status, string(respBody))
+
+	if res.StatusCode != 200 {
+		return fmt.Errorf("HA API returned %s", res.Status)
+	}
+	return nil
+}
+
 // pushAllEnergySensors 推送燃气用量、费用、年度累计三个传感器
-func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annualUsage float64) error {
+func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annualUsage float64, usages []MonthlyUsage) error {
 	// 燃气用量
-	if err := pushEnergySensor(client, haToken, "sensor.enecle_usage", usage, "m³", "gas"); err != nil {
+	if err := pushEnergySensor(client, haToken, "sensor.enecle_last_mon_usage", usage, "m³", "gas"); err != nil {
 		return err
 	}
 
 	// 燃气费用
-	if err := pushEnergySensor(client, haToken, "sensor.enecle_cost", cost, "JPY", "monetary"); err != nil {
+	if err := pushEnergySensor(client, haToken, "sensor.enecle_last_mon_cost", cost, "JPY", "monetary"); err != nil {
 		return err
 	}
 
 	// 年度累计燃气量
 	if err := pushEnergySensor(client, haToken, "sensor.enecle_annual_usage", annualUsage, "m³", "gas"); err != nil {
+		return err
+	}
+
+	// 上传到 Home Assistant 统计 API
+	err := pushStatistics(client, HA_URL, haToken, "sensor.enecle_usage", usages)
+	if err != nil {
 		return err
 	}
 
