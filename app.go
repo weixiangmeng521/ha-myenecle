@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/net/html"
 )
@@ -377,7 +378,7 @@ func monthToNumber(m string) int {
 // 上传到 Home Assistant 统计接口
 // -----------------------------
 func pushStatistics(client *http.Client, haURL, haToken, statisticID string, usages []MonthlyUsage) error {
-	// 生成 metadata
+	// metadata 定义
 	payload := map[string]interface{}{
 		"metadata": map[string]interface{}{
 			"statistic_id":        statisticID,
@@ -388,25 +389,26 @@ func pushStatistics(client *http.Client, haURL, haToken, statisticID string, usa
 		},
 	}
 
-	// 生成 stats
+	// 生成 stats 数据
 	var stats []map[string]interface{}
 	var sum float64
 	for _, u := range usages {
 		sum += u.Value
 
-		// 假设 u.Month 是 "3月" → 转换为具体时间戳 (这里先简化)
-		// 实际最好映射成 "2025-03-01T00:00:00+09:00"
-		start := fmt.Sprintf("2025-%02d-01T00:00:00+09:00", monthToNumber(u.Month))
+		// 把 "3月" 转换成具体日期（本地时间 → UTC RFC3339）
+		month := monthToNumber(u.Month)
+		loc, _ := time.LoadLocation("Asia/Tokyo")
+		startTime := time.Date(2025, time.Month(month), 1, 0, 0, 0, 0, loc).UTC()
 
 		stats = append(stats, map[string]interface{}{
-			"start": start,
+			"start": startTime.Format(time.RFC3339),
 			"state": u.Value,
 			"sum":   sum,
 		})
 	}
 	payload["stats"] = stats
 
-	// POST 请求
+	// 发送请求
 	body, _ := json.Marshal(payload)
 	url := haURL + "/statistics"
 
@@ -423,7 +425,8 @@ func pushStatistics(client *http.Client, haURL, haToken, statisticID string, usa
 	respBody, _ := io.ReadAll(res.Body)
 	log.Println("HA Response:", res.Status, string(respBody))
 
-	if res.StatusCode != 200 {
+	// 接受 200 和 201
+	if res.StatusCode != 200 && res.StatusCode != 201 {
 		return fmt.Errorf("HA API returned %s", res.Status)
 	}
 	return nil
