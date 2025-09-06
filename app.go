@@ -144,11 +144,11 @@ func extractUsage(htmlBody string) float64 {
 		// 转换为 float64
 		f, err := strconv.ParseFloat(m[1], 64)
 		if err != nil {
-			fmt.Println("Convert err", err)
+			log.Println("Convert err", err)
 			return 0
 		}
 
-		fmt.Println("float64:", f)
+		log.Println("float64:", f)
 		return f
 	}
 	return 0
@@ -183,7 +183,7 @@ func extractCost(htmlBody string) float64 {
 		numStr := strings.ReplaceAll(m[1], ",", "")
 		f, err := strconv.ParseFloat(numStr, 64)
 		if err != nil {
-			fmt.Println("Convert err:", err)
+			log.Println("Convert err:", err)
 			return 0
 		}
 		return f
@@ -420,7 +420,7 @@ func pushStatistics(client *http.Client, haURL, haToken, statisticID string, usa
 
 	res, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to push statistics: %w", err)
+		return err
 	}
 	defer res.Body.Close()
 
@@ -429,7 +429,7 @@ func pushStatistics(client *http.Client, haURL, haToken, statisticID string, usa
 
 	// 接受 200 和 201
 	if res.StatusCode != 200 && res.StatusCode != 201 {
-		return fmt.Errorf("HA API returned %s", res.Status)
+		return err
 	}
 	return nil
 }
@@ -437,25 +437,25 @@ func pushStatistics(client *http.Client, haURL, haToken, statisticID string, usa
 // pushAllEnergySensors 推送燃气用量、费用、年度累计三个传感器
 func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annualUsage float64, usages []MonthlyUsage) error {
 	// 燃气用量
-	fmt.Println("Tring to push enecle_last_mon_usage")
+	log.Println("Tring to push enecle_last_mon_usage")
 	if err := pushEnergySensor(client, haToken, "sensor.enecle_last_mon_usage", usage, "m³", "gas"); err != nil {
 		return err
 	}
 
 	// 燃气费用
-	fmt.Println("Tring to push enecle_last_mon_cost")
+	log.Println("Tring to push enecle_last_mon_cost")
 	if err := pushEnergySensor(client, haToken, "sensor.enecle_last_mon_cost", cost, "JPY", "monetary"); err != nil {
 		return err
 	}
 
 	// 年度累计燃气量
-	fmt.Println("Tring to push enecle_annual_usage")
+	log.Println("Tring to push enecle_annual_usage")
 	if err := pushEnergySensor(client, haToken, "sensor.enecle_annual_usage", annualUsage, "m³", "gas"); err != nil {
 		return err
 	}
 
 	// 上传到 Home Assistant 统计 API
-	fmt.Println("Tring to push enecle_usage")
+	log.Println("Tring to push enecle_usage")
 	err := pushStatistics(client, HA_URL, haToken, "sensor.enecle_usage", usages)
 	if err != nil {
 		return err
