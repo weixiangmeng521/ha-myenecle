@@ -267,7 +267,7 @@ func extractAnnualUsage(htmlBody string) float64 {
 }
 
 // pushEnergySensor 推送一个能源面板可识别的传感器
-func pushEnergySensor(client *http.Client, haURL, haToken, entity string, state float64, unit, deviceClass string) error {
+func pushEnergySensor(client *http.Client, haToken, entity string, state float64, unit, deviceClass string) error {
 	data := map[string]interface{}{
 		"state": state,
 		"attributes": map[string]interface{}{
@@ -279,7 +279,7 @@ func pushEnergySensor(client *http.Client, haURL, haToken, entity string, state 
 	}
 
 	payload, _ := json.Marshal(data)
-	url := fmt.Sprintf("%s/states/%s", haURL, entity)
+	url := fmt.Sprintf("%s/api/states/%s", HA_URL, entity)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Bearer "+haToken)
@@ -302,19 +302,19 @@ func pushEnergySensor(client *http.Client, haURL, haToken, entity string, state 
 }
 
 // pushAllEnergySensors 推送燃气用量、费用、年度累计三个传感器
-func pushAllEnergySensors(client *http.Client, haURL, haToken string, usage, cost, annualUsage float64) error {
+func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annualUsage float64) error {
 	// 燃气用量
-	if err := pushEnergySensor(client, haURL, haToken, "sensor.enecle_usage", usage, "m³", "gas"); err != nil {
+	if err := pushEnergySensor(client, haToken, "sensor.enecle_usage", usage, "m³", "gas"); err != nil {
 		return err
 	}
 
 	// 燃气费用
-	if err := pushEnergySensor(client, haURL, haToken, "sensor.enecle_cost", cost, "JPY", "monetary"); err != nil {
+	if err := pushEnergySensor(client, haToken, "sensor.enecle_cost", cost, "JPY", "monetary"); err != nil {
 		return err
 	}
 
 	// 年度累计燃气量
-	if err := pushEnergySensor(client, haURL, haToken, "sensor.enecle_annual_usage", annualUsage, "m³", "gas"); err != nil {
+	if err := pushEnergySensor(client, haToken, "sensor.enecle_annual_usage", annualUsage, "m³", "gas"); err != nil {
 		return err
 	}
 
