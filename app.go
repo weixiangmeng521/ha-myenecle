@@ -410,7 +410,7 @@ func pushStatistics(client *http.Client, haURL, haToken, statisticID string, usa
 
 	// 发送请求
 	body, _ := json.Marshal(payload)
-	url := haURL + "/api/statistics"
+	url := haURL + "/api/statistics/sensor.enecle_usage"
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	log.Println("Request: ", url)
