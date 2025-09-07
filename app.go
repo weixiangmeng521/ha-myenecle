@@ -414,7 +414,8 @@ func pushMonthlyUsage(client *http.Client, haURL, haToken, entityID string, usag
 		respBody, _ := io.ReadAll(res.Body)
 		res.Body.Close()
 
-		log.Printf("Request: %s\nHA Response: %s %s\n", url, res.Status, string(respBody))
+		log.Printf("=====> Pushing usage %.2f m³ for %s (UTC %s)\nHA Response: %s %s\n",
+			u.Value, u.Month, ts.Format(time.RFC3339), res.Status, string(respBody))
 
 		if res.StatusCode != 200 && res.StatusCode != 201 {
 			return fmt.Errorf("failed to push usage for %s: %s", u.Month, string(respBody))
