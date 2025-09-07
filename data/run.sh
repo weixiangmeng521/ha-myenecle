@@ -12,7 +12,8 @@ while true; do
     export HA_TOKEN="$haToken"
 
     # excute
-    /usr/bin/myenecle -u "$username" -p "$password" -t "$haToken"
+    # /usr/bin/myenecle -u "$username" -p "$password" -t "$haToken"
 
+     "$username" -p "$password" -t "$haToken"
     sleep 3600
 done
