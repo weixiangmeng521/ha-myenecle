@@ -395,6 +395,7 @@ func pushMonthlyUsage(client *http.Client, haURL, haToken, entityID string, usag
 			"attributes": map[string]interface{}{
 				"unit_of_measurement": "m³",
 				"friendly_name":       "Enecle Last Month Usage",
+				"state_class":         "measurement",
 			},
 			"last_updated": ts.Format(time.RFC3339),
 		}
