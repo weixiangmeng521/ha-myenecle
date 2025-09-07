@@ -445,12 +445,12 @@ func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annu
 		return err
 	}
 
-	// 上传到 Home Assistant 统计 API
-	log.Println("Tring to push enecle_usage")
-	err := pushMonthlyUsage(client, HA_URL, haToken, "sensor.enecle_last_mon_usage", usages)
-	if err != nil {
-		return err
-	}
+	// // 上传到 Home Assistant 统计 API
+	// log.Println("Tring to push enecle_usage")
+	// err := pushMonthlyUsage(client, HA_URL, haToken, "sensor.enecle_last_mon_usage", usages)
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
