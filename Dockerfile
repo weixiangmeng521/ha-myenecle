@@ -11,8 +11,8 @@ LABEL \
 
 # 拷贝二进制和启动脚本
 COPY enecle-linux-aarch64 /usr/bin/myenecle 
-COPY run.sh /run.sh
-RUN chmod +x /enecle-linux-aarch64 /run.sh
+COPY data/run.sh /
+RUN chmod +x /usr/bin/myenecle /run.sh
 
 # 设置启动命令
 CMD [ "/run.sh" ]
