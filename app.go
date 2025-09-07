@@ -11,6 +11,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -378,10 +379,15 @@ func monthToNumber(m string) int {
 // 上传到 Home Assistant 统计接口
 // -----------------------------
 func pushMonthlyUsage(client *http.Client, haURL, haToken, entityID string, usages []MonthlyUsage) error {
+	// 按月份升序
+	sort.Slice(usages, func(i, j int) bool {
+		return monthToNumber(usages[i].Month) < monthToNumber(usages[j].Month)
+	})
+
+	loc, _ := time.LoadLocation("Asia/Tokyo")
+
 	for _, u := range usages {
-		// 把 "3月" 转换成具体日期（本地时间 → UTC RFC3339）
 		month := monthToNumber(u.Month)
-		loc, _ := time.LoadLocation("Asia/Tokyo")
 		ts := time.Date(2025, time.Month(month), 1, 0, 0, 0, 0, loc).UTC()
 
 		payload := map[string]interface{}{
@@ -404,16 +410,16 @@ func pushMonthlyUsage(client *http.Client, haURL, haToken, entityID string, usag
 		if err != nil {
 			return err
 		}
-		defer res.Body.Close()
-
 		respBody, _ := io.ReadAll(res.Body)
-		log.Println("Request:", url)
-		log.Println("HA Response:", res.Status, string(respBody))
+		res.Body.Close()
+
+		log.Printf("Request: %s\nHA Response: %s %s\n", url, res.Status, string(respBody))
 
 		if res.StatusCode != 200 && res.StatusCode != 201 {
 			return fmt.Errorf("failed to push usage for %s: %s", u.Month, string(respBody))
 		}
 	}
+
 	return nil
 }
 
