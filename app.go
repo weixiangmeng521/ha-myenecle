@@ -377,59 +377,42 @@ func monthToNumber(m string) int {
 // -----------------------------
 // 上传到 Home Assistant 统计接口
 // -----------------------------
-func pushStatistics(client *http.Client, haURL, haToken, statisticID string, usages []MonthlyUsage) error {
-	// metadata 定义
-	payload := map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"statistic_id":        statisticID,
-			"unit_of_measurement": "m³",
-			"has_mean":            false,
-			"has_sum":             true,
-			"name":                "Enecle Gas Usage",
-		},
-	}
-
-	// 生成 stats 数据
-	var stats []map[string]interface{}
-	var sum float64
+func pushMonthlyUsage(client *http.Client, haURL, haToken, entityID string, usages []MonthlyUsage) error {
 	for _, u := range usages {
-		sum += u.Value
-
 		// 把 "3月" 转换成具体日期（本地时间 → UTC RFC3339）
 		month := monthToNumber(u.Month)
 		loc, _ := time.LoadLocation("Asia/Tokyo")
-		startTime := time.Date(2025, time.Month(month), 1, 0, 0, 0, 0, loc).UTC()
+		ts := time.Date(2025, time.Month(month), 1, 0, 0, 0, 0, loc).UTC()
 
-		stats = append(stats, map[string]interface{}{
-			"start": startTime.Format(time.RFC3339),
+		payload := map[string]interface{}{
 			"state": u.Value,
-			"sum":   sum,
-		})
-	}
-	payload["stats"] = stats
+			"attributes": map[string]interface{}{
+				"unit_of_measurement": "m³",
+				"friendly_name":       "Enecle Last Month Usage",
+			},
+			"last_updated": ts.Format(time.RFC3339),
+		}
 
-	// 发送请求
-	body, _ := json.Marshal(payload)
-	url := haURL + "/api/statistics/sensor.enecle_usage"
+		body, _ := json.Marshal(payload)
+		url := haURL + "/api/states/" + entityID
 
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
-	log.Println("Request: ", url)
+		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
+		req.Header.Set("Authorization", "Bearer "+haToken)
+		req.Header.Set("Content-Type", "application/json")
 
-	req.Header.Set("Authorization", "Bearer "+haToken)
-	req.Header.Set("Content-Type", "application/json")
+		res, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
 
-	res, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
+		respBody, _ := io.ReadAll(res.Body)
+		log.Println("Request:", url)
+		log.Println("HA Response:", res.Status, string(respBody))
 
-	respBody, _ := io.ReadAll(res.Body)
-	log.Println("HA Response:", res.Status, string(respBody))
-
-	// 接受 200 和 201
-	if res.StatusCode != 200 && res.StatusCode != 201 {
-		return err
+		if res.StatusCode != 200 && res.StatusCode != 201 {
+			return fmt.Errorf("failed to push usage for %s: %s", u.Month, string(respBody))
+		}
 	}
 	return nil
 }
@@ -456,7 +439,7 @@ func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annu
 
 	// 上传到 Home Assistant 统计 API
 	log.Println("Tring to push enecle_usage")
-	err := pushStatistics(client, HA_URL, haToken, "sensor.enecle_usage", usages)
+	err := pushMonthlyUsage(client, HA_URL, haToken, "sensor.enecle_last_mon_usage", usages)
 	if err != nil {
 		return err
 	}
