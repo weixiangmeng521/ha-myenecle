@@ -429,7 +429,7 @@ func pushMonthlyUsage(client *http.Client, haURL, haToken, entityID string, usag
 func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annualUsage float64, usages []MonthlyUsage) error {
 	// 燃气用量
 	log.Println("Tring to push enecle_last_mon_usage")
-	if err := pushEnergySensor(client, haToken, "sensor.enecle_last_mon_usage", usage, "m³", "gas"); err != nil {
+	if err := pushEnergySensor(client, haToken, "sensor.enecle_last_mon_usage", usage, "m³", "energy"); err != nil {
 		return err
 	}
 
@@ -441,7 +441,7 @@ func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annu
 
 	// 年度累计燃气量
 	log.Println("Tring to push enecle_annual_usage")
-	if err := pushEnergySensor(client, haToken, "sensor.enecle_annual_usage", annualUsage, "m³", "gas"); err != nil {
+	if err := pushEnergySensor(client, haToken, "sensor.enecle_annual_usage", annualUsage, "m³", "energy"); err != nil {
 		return err
 	}
 
