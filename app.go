@@ -436,6 +436,8 @@ func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annu
 	// 燃气费用
 	log.Println("Tring to push enecle_last_mon_cost")
 	if err := pushEnergySensor(client, haToken, "sensor.enecle_last_mon_cost", cost, "JPY", "monetary"); err != nil {
+		// for sometimes returns 201
+		pushEnergySensor(client, haToken, "sensor.enecle_last_mon_cost", cost, "JPY", "monetary")
 		return err
 	}
 
