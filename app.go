@@ -435,7 +435,7 @@ func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annu
 
 	// sleep a while
 	time.Sleep(800 * time.Millisecond)
-	log.Panicln("Sleep a while...")
+	log.Println("Sleep a while...")
 
 	// 燃气费用
 	log.Println("Tring to push enecle_last_mon_cost")
@@ -445,7 +445,7 @@ func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annu
 
 	// sleep a while
 	time.Sleep(800 * time.Millisecond)
-	log.Panicln("Sleep a while...")
+	log.Println("Sleep a while...")
 
 	// 年度累计燃气量
 	log.Println("Tring to push enecle_annual_usage")
@@ -455,7 +455,7 @@ func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annu
 
 	// sleep a while
 	time.Sleep(800 * time.Millisecond)
-	log.Panicln("Sleep a while...")
+	log.Println("Sleep a while...")
 
 	// // 上传到 Home Assistant 统计 API
 	// log.Println("Tring to push enecle_usage")
