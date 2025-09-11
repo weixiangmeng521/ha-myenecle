@@ -433,19 +433,29 @@ func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annu
 		return err
 	}
 
+	// sleep a while
+	time.Sleep(800 * time.Millisecond)
+	log.Panicln("Sleep a while...")
+
 	// 燃气费用
 	log.Println("Tring to push enecle_last_mon_cost")
 	if err := pushEnergySensor(client, haToken, "sensor.enecle_last_mon_cost", cost, "JPY", "monetary"); err != nil {
-		// for sometimes returns 201
-		pushEnergySensor(client, haToken, "sensor.enecle_last_mon_cost", cost, "JPY", "monetary")
 		return err
 	}
+
+	// sleep a while
+	time.Sleep(800 * time.Millisecond)
+	log.Panicln("Sleep a while...")
 
 	// 年度累计燃气量
 	log.Println("Tring to push enecle_annual_usage")
 	if err := pushEnergySensor(client, haToken, "sensor.enecle_annual_usage", annualUsage, "m³", "energy"); err != nil {
 		return err
 	}
+
+	// sleep a while
+	time.Sleep(800 * time.Millisecond)
+	log.Panicln("Sleep a while...")
 
 	// // 上传到 Home Assistant 统计 API
 	// log.Println("Tring to push enecle_usage")
