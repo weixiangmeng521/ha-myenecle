@@ -285,8 +285,10 @@ func pushEnergySensor(mqttClient mqtt.Client, entity string, state float64, unit
 	deviceID := hash[:3]
 
 	// 配置 Topic
-	configTopic := fmt.Sprintf("homeassistant/sensor/%s/config", entity)
-	stateTopic := fmt.Sprintf("homeassistant/sensor/%s/state", entity)
+	// 确保 entity 只包含小写字母、数字和下划线
+	safeEntity := strings.ReplaceAll(entity, ".", "_")
+	configTopic := fmt.Sprintf("homeassistant/sensor/%s/config", safeEntity)
+	stateTopic := fmt.Sprintf("homeassistant/sensor/%s/state", safeEntity)
 
 	// 配置 Payload
 	configPayload := fmt.Sprintf(`{
@@ -304,7 +306,7 @@ func pushEnergySensor(mqttClient mqtt.Client, entity string, state float64, unit
 
 	// 发布 Discovery 配置
 	token := mqttClient.Publish(configTopic, 0, true, configPayload)
-	token.WaitTimeout(5 * time.Second)
+	token.WaitTimeout(1 * time.Second)
 	if token.Error() != nil {
 		return fmt.Errorf("failed to publish config to MQTT: %w", token.Error())
 	}
@@ -312,7 +314,6 @@ func pushEnergySensor(mqttClient mqtt.Client, entity string, state float64, unit
 	// 发布状态
 	statePayload := fmt.Sprintf(`{"state": %.3f}`, state)
 	token = mqttClient.Publish(stateTopic, 0, true, statePayload)
-	token.WaitTimeout(5 * time.Second)
 	if token.Error() != nil {
 		return fmt.Errorf("failed to publish state to MQTT: %w", token.Error())
 	}
