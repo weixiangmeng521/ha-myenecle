@@ -28,6 +28,8 @@ const (
 	ClientID = "myenecle-clinet"
 )
 
+var mqttClient mqtt.Client
+
 func main() {
 	var username string
 	var password string
@@ -39,10 +41,11 @@ func main() {
 		log.Fatal("missing USERNAME, PASSWORD")
 	}
 
-	mqttClient := newMQTTClient()
+	mqttClient = newMQTTClient()
+	defer mqttClient.Disconnect(250)
 
 	// 启动时先跑一次（可删）
-	task(mqttClient, username, password)
+	task(username, password)
 
 	// ticker := time.NewTicker(15 * time.Minute)
 	// defer ticker.Stop()
@@ -53,7 +56,7 @@ func main() {
 	// }
 }
 
-func task(mqttClient mqtt.Client, username string, password string) {
+func task(username string, password string) {
 	jar, _ := cookiejar.New(nil)
 	httpClinet := &http.Client{Jar: jar}
 
@@ -127,10 +130,11 @@ func task(mqttClient mqtt.Client, username string, password string) {
 	log.Println("Annual usage map:", annualUsageMap)
 	log.Println("Annual usage statics:", usages)
 	log.Println("Annual usage:", total)
+
 	start := time.Now()
 	for {
-		fmt.Println("Pushing data at:", time.Now())
-		if err := pushAllEnergySensors(mqttClient, httpClinet, usage, cost, total, usages); err != nil {
+		log.Println("Going to push data at: ", time.Now())
+		if err := pushAllEnergySensors(httpClinet, usage, cost, total, usages); err != nil {
 			log.Println("Push message to sensor err: ", err)
 		}
 		// if more than one hour
@@ -141,6 +145,7 @@ func task(mqttClient mqtt.Client, username string, password string) {
 		// sleep one minute
 		time.Sleep(time.Minute)
 	}
+	defer mqttClient.Disconnect(250)
 }
 
 // 提取 __RequestVerificationToken
@@ -288,7 +293,11 @@ func extractAnnualUsage(htmlBody string) float64 {
 
 // pushEnergySensor 推送一个能源面板可识别的传感器
 // https://www.mqtt.cn/1101.html
-func pushEnergySensor(mqttClient mqtt.Client, entity string, state float64, unit, deviceClass string) error {
+func pushEnergySensor(entity string, state float64, unit, deviceClass string) error {
+	if mqttClient == nil {
+		mqttClient = newMQTTClient()
+	}
+
 	// 计算 unique_id / device.identifiers
 	hash := fmt.Sprintf("%x", md5.Sum([]byte(entity+deviceClass)))
 	uniqueID := hash[:8]
@@ -420,11 +429,10 @@ func newMQTTClient() mqtt.Client {
 }
 
 // pushAllEnergySensors 推送燃气用量、费用、年度累计三个传感器
-func pushAllEnergySensors(mqttClient mqtt.Client, httpClinet *http.Client, usage, cost, annualUsage float64, usages []MonthlyUsage) error {
-	defer mqttClient.Disconnect(250)
+func pushAllEnergySensors(httpClinet *http.Client, usage, cost, annualUsage float64, usages []MonthlyUsage) error {
 	// 燃气用量
 	log.Println("Tring to push enecle_last_mon_usage")
-	if err := pushEnergySensor(mqttClient, "sensor.enecle_last_mon_usage", usage, "kWh", "energy"); err != nil {
+	if err := pushEnergySensor("sensor.enecle_last_mon_usage", usage, "kWh", "energy"); err != nil {
 		return err
 	}
 
@@ -434,7 +442,7 @@ func pushAllEnergySensors(mqttClient mqtt.Client, httpClinet *http.Client, usage
 
 	// 燃气费用
 	log.Println("Tring to push enecle_last_mon_cost")
-	if err := pushEnergySensor(mqttClient, "sensor.enecle_last_mon_cost", cost, "JPY", "monetary"); err != nil {
+	if err := pushEnergySensor("sensor.enecle_last_mon_cost", cost, "JPY", "monetary"); err != nil {
 		return err
 	}
 
@@ -444,7 +452,7 @@ func pushAllEnergySensors(mqttClient mqtt.Client, httpClinet *http.Client, usage
 
 	// 年度累计燃气量
 	log.Println("Tring to push enecle_annual_usage")
-	if err := pushEnergySensor(mqttClient, "sensor.enecle_annual_usage", annualUsage, "kWh", "energy"); err != nil {
+	if err := pushEnergySensor("sensor.enecle_annual_usage", annualUsage, "kWh", "energy"); err != nil {
 		return err
 	}
 	// // 上传到 Home Assistant 统计 API
