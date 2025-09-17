@@ -302,7 +302,7 @@ func pushEnergySensor(mqttClient mqtt.Client, entity string, state float64, unit
 			"name": "%s"
 		},
 		"state_class": "total"
-	}`, deviceClass, stateTopic, unit, uniqueID, deviceID+entity, entity)
+	}`, deviceClass, stateTopic, unit, uniqueID, entity+deviceID, entity)
 
 	// 发布 Discovery 配置
 	token := mqttClient.Publish(configTopic, 0, true, configPayload)
@@ -414,7 +414,7 @@ func pushAllEnergySensors(mqttClient mqtt.Client, httpClinet *http.Client, usage
 	defer mqttClient.Disconnect(250)
 	// 燃气用量
 	log.Println("Tring to push enecle_last_mon_usage")
-	if err := pushEnergySensor(mqttClient, "sensor.enecle_last_mon_usage", usage, "gas", "energy"); err != nil {
+	if err := pushEnergySensor(mqttClient, "sensor.enecle_last_mon_usage", usage, "kWh", "energy"); err != nil {
 		return err
 	}
 
@@ -434,7 +434,7 @@ func pushAllEnergySensors(mqttClient mqtt.Client, httpClinet *http.Client, usage
 
 	// 年度累计燃气量
 	log.Println("Tring to push enecle_annual_usage")
-	if err := pushEnergySensor(mqttClient, "sensor.enecle_annual_usage", annualUsage, "gas", "energy"); err != nil {
+	if err := pushEnergySensor(mqttClient, "sensor.enecle_annual_usage", annualUsage, "kWh", "energy"); err != nil {
 		return err
 	}
 	// // 上传到 Home Assistant 统计 API
