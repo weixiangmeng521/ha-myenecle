@@ -127,9 +127,19 @@ func task(mqttClient mqtt.Client, username string, password string) {
 	log.Println("Annual usage map:", annualUsageMap)
 	log.Println("Annual usage statics:", usages)
 	log.Println("Annual usage:", total)
-
-	if err := pushAllEnergySensors(mqttClient, httpClinet, usage, cost, total, usages); err != nil {
-		log.Println("Push message to sensor err: ", err)
+	start := time.Now()
+	for {
+		fmt.Println("Pushing data at:", time.Now())
+		if err := pushAllEnergySensors(mqttClient, httpClinet, usage, cost, total, usages); err != nil {
+			log.Println("Push message to sensor err: ", err)
+		}
+		// if more than one hour
+		if time.Since(start) >= time.Hour {
+			fmt.Println("more than one hour, exit.")
+			break
+		}
+		// sleep one minute
+		time.Sleep(time.Minute)
 	}
 }
 
