@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/md5"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -276,34 +277,47 @@ func extractAnnualUsage(htmlBody string) float64 {
 }
 
 // pushEnergySensor 推送一个能源面板可识别的传感器
+// https://www.mqtt.cn/1101.html
 func pushEnergySensor(mqttClient mqtt.Client, entity string, state float64, unit, deviceClass string) error {
-	// 1发布 MQTT Discovery 配置
-	configTopic := fmt.Sprintf("homeassistant/sensor/%s/config", entity)
-	configPayload := fmt.Sprintf(`{
-        "name": "%s",
-        "state_topic": "myenecle/%s",
-        "unit_of_measurement": "%s",
-        "device_class": "%s",
-        "state_class": "total_increasing"
-    }`, entity, entity, unit, deviceClass)
+	// 计算 unique_id / device.identifiers
+	hash := fmt.Sprintf("%x", md5.Sum([]byte(entity+deviceClass)))
+	uniqueID := hash[:8]
+	deviceID := hash[:3]
 
+	// 配置 Topic
+	configTopic := fmt.Sprintf("homeassistant/sensor/%s/config", entity)
+	stateTopic := fmt.Sprintf("homeassistant/sensor/%s/state", entity)
+
+	// 配置 Payload
+	configPayload := fmt.Sprintf(`{
+		"device_class": "%s",
+		"state_topic": "%s",
+		"unit_of_measurement": "%s",
+		"value_template": "{{ value_json.state }}",
+		"unique_id": "0x%s",
+		"device": {
+			"identifiers": ["%s"],
+			"name": "%s"
+		},
+		"state_class": "total_increasing"
+	}`, deviceClass, stateTopic, unit, uniqueID, deviceID+entity, entity)
+
+	// 发布 Discovery 配置
 	token := mqttClient.Publish(configTopic, 0, true, configPayload)
 	token.WaitTimeout(5 * time.Second)
 	if token.Error() != nil {
 		return fmt.Errorf("failed to publish config to MQTT: %w", token.Error())
 	}
 
-	// 2️⃣ 发布状态
-	stateTopic := fmt.Sprintf("myenecle/%s", entity)
-	statePayload := fmt.Sprintf("%.3f", state)
-
+	// 发布状态
+	statePayload := fmt.Sprintf(`{"state": %.3f}`, state)
 	token = mqttClient.Publish(stateTopic, 0, true, statePayload)
 	token.WaitTimeout(5 * time.Second)
 	if token.Error() != nil {
 		return fmt.Errorf("failed to publish state to MQTT: %w", token.Error())
 	}
 
-	log.Printf("MQTT published entity '%s': state=%s %s\n", entity, statePayload, unit)
+	log.Printf("MQTT published entity '%s': state=%.3f %s\n", entity, state, unit)
 	return nil
 }
 
