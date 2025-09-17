@@ -11,31 +11,37 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+
 	"golang.org/x/net/html"
 )
 
-const HA_URL = "http://homeassistant.local:8123"
+const (
+	Broker   = "mqtt://core-mosquitto:1883"
+	Username = "addons"
+	Password = "aiteab5elia9hee9ahp5chaoG1aegohcahzie9iigaewiaPeiquu1lau9Ho5Ooje"
+	ClientID = "myenecle-clinet"
+)
 
 func main() {
 	var username string
 	var password string
-	var haToken string
 	flag.StringVar(&username, "u", "", "-u username")
 	flag.StringVar(&password, "p", "", "-p password")
-	flag.StringVar(&haToken, "t", "", "-t long live token")
 	flag.Parse()
 
-	if username == "" || password == "" || haToken == "" {
-		log.Fatal("missing USERNAME, PASSWORD, HA_TOKEN env")
+	if username == "" || password == "" {
+		log.Fatal("missing USERNAME, PASSWORD")
 	}
 
+	mqttClient := newMQTTClient()
+
 	// 启动时先跑一次（可删）
-	task(username, password, haToken)
+	task(mqttClient, username, password)
 
 	// ticker := time.NewTicker(15 * time.Minute)
 	// defer ticker.Stop()
@@ -46,13 +52,13 @@ func main() {
 	// }
 }
 
-func task(username string, password string, haToken string) {
+func task(mqttClient mqtt.Client, username string, password string) {
 	jar, _ := cookiejar.New(nil)
-	client := &http.Client{Jar: jar}
+	httpClinet := &http.Client{Jar: jar}
 
 	// Step 1: get login page, extract token
 	log.Println("Tring to get form token......")
-	loginPage, err := client.Get("https://myenecle.com/Login")
+	loginPage, err := httpClinet.Get("https://myenecle.com/Login")
 	if err != nil {
 		log.Fatal("failed to fetch login page:", err)
 	}
@@ -76,7 +82,7 @@ func task(username string, password string, haToken string) {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") // 设置表单类型
 
-	resp, err := client.Do(req)
+	resp, err := httpClinet.Do(req)
 	if err != nil {
 		log.Fatal("failed to login:", err)
 	}
@@ -101,7 +107,7 @@ func task(username string, password string, haToken string) {
 	}
 
 	// Step 3: fetch MyPageTop
-	mypage, err := client.Get("https://myenecle.com/MyPage/MyPageTop")
+	mypage, err := httpClinet.Get("https://myenecle.com/MyPage/MyPageTop")
 	if err != nil {
 		log.Fatal("failed to fetch mypage:", err)
 	}
@@ -121,7 +127,7 @@ func task(username string, password string, haToken string) {
 	log.Println("Annual usage statics:", usages)
 	log.Println("Annual usage:", total)
 
-	if err := pushAllEnergySensors(client, haToken, usage, cost, total, usages); err != nil {
+	if err := pushAllEnergySensors(mqttClient, httpClinet, usage, cost, total, usages); err != nil {
 		log.Println("Push message to sensor err: ", err)
 	}
 }
@@ -270,37 +276,30 @@ func extractAnnualUsage(htmlBody string) float64 {
 }
 
 // pushEnergySensor 推送一个能源面板可识别的传感器
-func pushEnergySensor(client *http.Client, haToken, entity string, state float64, unit, deviceClass string) error {
+func pushEnergySensor(mqttClient mqtt.Client, entity string, state float64, unit, deviceClass string) error {
 	data := map[string]interface{}{
 		"state": state,
 		"attributes": map[string]interface{}{
 			"unit_of_measurement": unit,
 			"device_class":        deviceClass,
-			"state_class":         "total_increasing", // 必须是 total_increasing 才能被 Energy Panel 识别
-			"friendly_name":       entity,             // 用 entity 名称作为 friendly_name
+			"state_class":         "total_increasing",
+			"friendly_name":       entity,
 		},
 	}
 
-	payload, _ := json.Marshal(data)
-	url := fmt.Sprintf("%s/api/states/%s", HA_URL, entity)
-
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(payload))
-	req.Header.Set("Authorization", "Bearer "+haToken)
-	req.Header.Set("Content-Type", "application/json")
-
-	res, err := client.Do(req)
+	payload, err := json.Marshal(data)
 	if err != nil {
-		return fmt.Errorf("failed to push to HA: %w", err)
-	}
-	defer res.Body.Close()
-
-	body, _ := io.ReadAll(res.Body)
-	log.Println("HA Response:", res.Status, string(body))
-
-	if res.StatusCode != 200 {
-		return fmt.Errorf("HA API returned %s", res.Status)
+		return fmt.Errorf("failed to marshal payload: %w", err)
 	}
 
+	topic := fmt.Sprintf("myenecle/%s", entity)
+	token := mqttClient.Publish(topic, 0, true, payload)
+	token.WaitTimeout(5 * time.Second)
+	if token.Error() != nil {
+		return fmt.Errorf("failed to publish MQTT: %w", token.Error())
+	}
+
+	log.Printf("MQTT publish: topic=%s payload=%s\n", topic, payload)
 	return nil
 }
 
@@ -375,61 +374,27 @@ func monthToNumber(m string) int {
 	return num
 }
 
-// -----------------------------
-// 上传到 Home Assistant 统计接口
-// -----------------------------
-func pushMonthlyUsage(client *http.Client, haURL, haToken, entityID string, usages []MonthlyUsage) error {
-	// 按月份升序
-	sort.Slice(usages, func(i, j int) bool {
-		return monthToNumber(usages[i].Month) < monthToNumber(usages[j].Month)
-	})
+// MQTT 客户端初始化示例
+func newMQTTClient() mqtt.Client {
+	opts := mqtt.NewClientOptions()
+	opts.AddBroker(Broker)
+	opts.SetUsername(Username)
+	opts.SetPassword(Password)
+	opts.SetClientID(ClientID)
+	opts.SetConnectTimeout(5 * time.Second)
 
-	loc, _ := time.LoadLocation("Asia/Tokyo")
-
-	for _, u := range usages {
-		month := monthToNumber(u.Month)
-		ts := time.Date(2025, time.Month(month), 1, 0, 0, 0, 0, loc).UTC()
-
-		payload := map[string]interface{}{
-			"state": u.Value,
-			"attributes": map[string]interface{}{
-				"unit_of_measurement": "m³",
-				"friendly_name":       "Enecle Last Month Usage",
-				"state_class":         "measurement",
-			},
-			"last_updated": ts.Format(time.RFC3339),
-		}
-
-		body, _ := json.Marshal(payload)
-		url := haURL + "/api/states/" + entityID
-
-		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
-		req.Header.Set("Authorization", "Bearer "+haToken)
-		req.Header.Set("Content-Type", "application/json")
-
-		res, err := client.Do(req)
-		if err != nil {
-			return err
-		}
-		respBody, _ := io.ReadAll(res.Body)
-		res.Body.Close()
-
-		log.Printf("=====> Pushing usage %.2f m³ for %s (UTC %s)\nHA Response: %s %s\n",
-			u.Value, u.Month, ts.Format(time.RFC3339), res.Status, string(respBody))
-
-		if res.StatusCode != 200 && res.StatusCode != 201 {
-			return fmt.Errorf("failed to push usage for %s: %s", u.Month, string(respBody))
-		}
+	mqttClinet := mqtt.NewClient(opts)
+	if token := mqttClinet.Connect(); token.Wait() && token.Error() != nil {
+		log.Fatalf("MQTT connect error: %v", token.Error())
 	}
-
-	return nil
+	return mqttClinet
 }
 
 // pushAllEnergySensors 推送燃气用量、费用、年度累计三个传感器
-func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annualUsage float64, usages []MonthlyUsage) error {
+func pushAllEnergySensors(mqttClient mqtt.Client, httpClinet *http.Client, usage, cost, annualUsage float64, usages []MonthlyUsage) error {
 	// 燃气用量
 	log.Println("Tring to push enecle_last_mon_usage")
-	if err := pushEnergySensor(client, haToken, "sensor.enecle_last_mon_usage", usage, "m³", "energy"); err != nil {
+	if err := pushEnergySensor(mqttClient, "sensor.enecle_last_mon_usage", usage, "m³", "energy"); err != nil {
 		return err
 	}
 
@@ -439,7 +404,7 @@ func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annu
 
 	// 燃气费用
 	log.Println("Tring to push enecle_last_mon_cost")
-	if err := pushEnergySensor(client, haToken, "sensor.enecle_last_mon_cost", cost, "JPY", "monetary"); err != nil {
+	if err := pushEnergySensor(mqttClient, "sensor.enecle_last_mon_cost", cost, "JPY", "monetary"); err != nil {
 		return err
 	}
 
@@ -449,7 +414,7 @@ func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annu
 
 	// 年度累计燃气量
 	log.Println("Tring to push enecle_annual_usage")
-	if err := pushEnergySensor(client, haToken, "sensor.enecle_annual_usage", annualUsage, "m³", "energy"); err != nil {
+	if err := pushEnergySensor(mqttClient, "sensor.enecle_annual_usage", annualUsage, "m³", "energy"); err != nil {
 		return err
 	}
 
@@ -459,7 +424,7 @@ func pushAllEnergySensors(client *http.Client, haToken string, usage, cost, annu
 
 	// // 上传到 Home Assistant 统计 API
 	// log.Println("Tring to push enecle_usage")
-	// err := pushMonthlyUsage(client, HA_URL, haToken, "sensor.enecle_last_mon_usage", usages)
+	// err := pushMonthlyUsage(httpClinet, HA_URL, "sensor.enecle_last_mon_usage", usages)
 	// if err != nil {
 	// 	return err
 	// }

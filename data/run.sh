@@ -9,9 +9,8 @@ while true; do
     # set env
     export USERNAME="$username"
     export PASSWORD="$password"
-    export HA_TOKEN="$haToken"
 
     # excute
-    /usr/bin/myenecle -u "$username" -p "$password" -t "$haToken"
+    /usr/bin/myenecle -u "$username" -p "$password"
     sleep 3600
 done
