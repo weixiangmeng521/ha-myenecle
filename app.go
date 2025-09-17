@@ -277,29 +277,33 @@ func extractAnnualUsage(htmlBody string) float64 {
 
 // pushEnergySensor 推送一个能源面板可识别的传感器
 func pushEnergySensor(mqttClient mqtt.Client, entity string, state float64, unit, deviceClass string) error {
-	data := map[string]interface{}{
-		"state": state,
-		"attributes": map[string]interface{}{
-			"unit_of_measurement": unit,
-			"device_class":        deviceClass,
-			"state_class":         "total_increasing",
-			"friendly_name":       entity,
-		},
-	}
+	// 1发布 MQTT Discovery 配置
+	configTopic := fmt.Sprintf("homeassistant/sensor/%s/config", entity)
+	configPayload := fmt.Sprintf(`{
+        "name": "%s",
+        "state_topic": "myenecle/%s",
+        "unit_of_measurement": "%s",
+        "device_class": "%s",
+        "state_class": "total_increasing"
+    }`, entity, entity, unit, deviceClass)
 
-	payload, err := json.Marshal(data)
-	if err != nil {
-		return fmt.Errorf("failed to marshal payload: %w", err)
-	}
-
-	topic := fmt.Sprintf("myenecle/%s", entity)
-	token := mqttClient.Publish(topic, 0, true, payload)
+	token := mqttClient.Publish(configTopic, 0, true, configPayload)
 	token.WaitTimeout(5 * time.Second)
 	if token.Error() != nil {
-		return fmt.Errorf("failed to publish MQTT: %w", token.Error())
+		return fmt.Errorf("failed to publish config to MQTT: %w", token.Error())
 	}
 
-	log.Printf("MQTT publish: topic=%s payload=%s\n", topic, payload)
+	// 2️⃣ 发布状态
+	stateTopic := fmt.Sprintf("myenecle/%s", entity)
+	statePayload := fmt.Sprintf("%.3f", state)
+
+	token = mqttClient.Publish(stateTopic, 0, true, statePayload)
+	token.WaitTimeout(5 * time.Second)
+	if token.Error() != nil {
+		return fmt.Errorf("failed to publish state to MQTT: %w", token.Error())
+	}
+
+	log.Printf("MQTT published entity '%s': state=%s %s\n", entity, statePayload, unit)
 	return nil
 }
 
@@ -392,6 +396,7 @@ func newMQTTClient() mqtt.Client {
 
 // pushAllEnergySensors 推送燃气用量、费用、年度累计三个传感器
 func pushAllEnergySensors(mqttClient mqtt.Client, httpClinet *http.Client, usage, cost, annualUsage float64, usages []MonthlyUsage) error {
+	defer mqttClient.Disconnect(250)
 	// 燃气用量
 	log.Println("Tring to push enecle_last_mon_usage")
 	if err := pushEnergySensor(mqttClient, "sensor.enecle_last_mon_usage", usage, "m³", "energy"); err != nil {
@@ -417,11 +422,6 @@ func pushAllEnergySensors(mqttClient mqtt.Client, httpClinet *http.Client, usage
 	if err := pushEnergySensor(mqttClient, "sensor.enecle_annual_usage", annualUsage, "m³", "energy"); err != nil {
 		return err
 	}
-
-	// sleep a while
-	time.Sleep(800 * time.Millisecond)
-	log.Println("Sleep a while...")
-
 	// // 上传到 Home Assistant 统计 API
 	// log.Println("Tring to push enecle_usage")
 	// err := pushMonthlyUsage(httpClinet, HA_URL, "sensor.enecle_last_mon_usage", usages)
