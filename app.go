@@ -131,20 +131,11 @@ func task(username string, password string) {
 	log.Println("Annual usage statics:", usages)
 	log.Println("Annual usage:", total)
 
-	start := time.Now()
-	for {
-		log.Println("Going to push data at: ", time.Now())
-		if err := pushAllEnergySensors(httpClinet, usage, cost, total, usages); err != nil {
-			log.Println("Push message to sensor err: ", err)
-		}
-		// if more than one hour
-		if time.Since(start) >= time.Hour {
-			fmt.Println("more than one hour, exit.")
-			break
-		}
-		// sleep one minute
-		time.Sleep(time.Minute)
+	log.Println("Going to push data at: ", time.Now())
+	if err := pushAllEnergySensors(httpClinet, usage, cost, total, usages); err != nil {
+		log.Println("Push message to sensor err: ", err)
 	}
+
 	defer mqttClient.Disconnect(250)
 }
 
