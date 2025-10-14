@@ -12,6 +12,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -41,8 +42,11 @@ func main() {
 		log.Fatal("missing USERNAME, PASSWORD")
 	}
 
-	mqttClient = newMQTTClient()
-	defer mqttClient.Disconnect(250)
+	if runtime.GOOS != "darwin" {
+		log.Println("Test env.")
+		mqttClient = newMQTTClient()
+		defer mqttClient.Disconnect(250)
+	}
 
 	// 启动时先跑一次（可删）
 	task(username, password)
@@ -118,25 +122,61 @@ func task(username string, password string) {
 	mpbody, _ := io.ReadAll(mypage.Body)
 	defer mypage.Body.Close()
 
+	//  Step 4: fetch List
+	listPage, err := httpClinet.Get("https://myenecle.com/List")
+	if err != nil {
+		log.Fatal("failed to fetch mypage:", err)
+	}
+	listBody, _ := io.ReadAll(listPage.Body)
+	linkMap, err := extractLinks(string(listBody))
+	if err != nil {
+		log.Fatal("fail to extra a link tag:", err)
+	}
+	firstLink := ""
+	for _, link := range linkMap {
+		if link["text"] == "検針詳細を表示" && firstLink == "" {
+			firstLink = link["href"]
+			break
+		}
+	}
+
+	var detailBody string
+	if firstLink != "" {
+		log.Println("Target link ", firstLink)
+		baseLink := "https://myenecle.com" + firstLink
+		detailPage, err := httpClinet.Get(baseLink)
+		if err != nil {
+			log.Fatal("failed to fetch mypage:", err)
+		}
+		detailBodyBytes, _ := io.ReadAll(detailPage.Body)
+		detailBody = string(detailBodyBytes)
+	}
+
 	// log.Println(string(mpbody))
 	// usage
-	usage := extractUsage(string(mpbody))
-	cost := extractCost(string(mpbody))
+	request_usage := extractUsage(string(mpbody))
+	request_cost := extractCost(string(mpbody))
+	last_mon_usage := extractLastMonUsage(detailBody)
+	last_mon_cost := extractLastMonCost(detailBody)
 	annualUsageMap := extractAnnualUsageMap(string(mpbody))
 	usages, total := extractAnnualUsages(string(mpbody))
 
-	log.Println("Gas usage:", usage)
-	log.Println("Gas cost:", cost)
+	log.Println("Request gas usage:", request_usage)
+	log.Println("Request gas cost:", request_cost)
+	log.Println("Last month gas usage:", last_mon_usage)
+	log.Println("Last month gas cost:", last_mon_cost)
 	log.Println("Annual usage map:", annualUsageMap)
 	log.Println("Annual usage statics:", usages)
 	log.Println("Annual usage:", total)
 
 	log.Println("Going to push data at: ", time.Now())
-	if err := pushAllEnergySensors(httpClinet, usage, cost, total, usages); err != nil {
+	if err := pushAllEnergySensors(httpClinet, request_usage, request_cost, last_mon_usage, last_mon_cost, total, usages); err != nil {
 		log.Println("Push message to sensor err: ", err)
 	}
 
-	defer mqttClient.Disconnect(250)
+	if runtime.GOOS != "darwin" {
+		defer mqttClient.Disconnect(250)
+	}
 }
 
 // 提取 __RequestVerificationToken
@@ -163,6 +203,48 @@ func extractUsage(htmlBody string) float64 {
 		}
 
 		log.Println("float64:", f)
+		return f
+	}
+	return 0
+}
+
+// extractUsage 提取 HTML 中 <em> 标签内的数字
+func extractLastMonUsage(htmlBody string) float64 {
+	if htmlBody == "" {
+		return 0.0
+	}
+	// 正则：前面必须有指定的 span，捕获 <em> 内的数字
+	re := regexp.MustCompile(`(?s)<dt>\s*今回ご使用量\s*</dt>.*?<dd[^>]*>(?:<strong>)?\s*([0-9.]+)\s*m3`)
+	match := re.FindStringSubmatch(htmlBody)
+	if len(match) > 1 {
+		// 转换为 float64
+		f, err := strconv.ParseFloat(match[1], 64)
+		if err != nil {
+			log.Println("Convert err", err)
+			return 0.0
+		}
+		log.Println("float64:", f)
+		return f
+	}
+	return 0.0
+}
+
+// extractUsage 提取 HTML 中 <em> 标签内的数字
+func extractLastMonCost(htmlBody string) float64 {
+	if htmlBody == "" {
+		return 0.0
+	}
+	// 正则：前面必须有指定的 span，捕获 <em> 内的数字
+	re := regexp.MustCompile(`(?s)<dl[^>]*>\s*<dt>\s*ガス料金合計\s*</dt>.*?<dd[^>]*>\s*([\d,]+)\s*&#x5186;</dd>`)
+	m := re.FindStringSubmatch(htmlBody)
+	if len(m) > 1 {
+		// 去掉千位分隔符
+		numStr := strings.ReplaceAll(m[1], ",", "")
+		f, err := strconv.ParseFloat(numStr, 64)
+		if err != nil {
+			log.Println("Convert err:", err)
+			return 0
+		}
 		return f
 	}
 	return 0
@@ -285,6 +367,10 @@ func extractAnnualUsage(htmlBody string) float64 {
 // pushEnergySensor 推送一个能源面板可识别的传感器
 // https://www.mqtt.cn/1101.html
 func pushEnergySensor(entity string, state float64, unit, deviceClass string) error {
+	if runtime.GOOS == "darwin" {
+		log.Println("dont need to push data")
+		return nil
+	}
 	if mqttClient == nil {
 		mqttClient = newMQTTClient()
 	}
@@ -420,10 +506,11 @@ func newMQTTClient() mqtt.Client {
 }
 
 // pushAllEnergySensors 推送燃气用量、费用、年度累计三个传感器
-func pushAllEnergySensors(httpClinet *http.Client, usage, cost, annualUsage float64, usages []MonthlyUsage) error {
-	// 燃气用量
-	log.Println("Tring to push enecle_last_mon_usage")
-	if err := pushEnergySensor("sensor.enecle_last_mon_usage", usage, "kWh", "energy"); err != nil {
+func pushAllEnergySensors(httpClinet *http.Client, request_usage, requesrt_cost, last_mon_usage, last_mon_cost, annualUsage float64, usages []MonthlyUsage) error {
+	// ################## request data. ##################
+	// current month request usage
+	log.Println("Tring to push enecle_request_usage")
+	if err := pushEnergySensor("sensor.enecle_request_usage", request_usage, "kWh", "energy"); err != nil {
 		return err
 	}
 
@@ -431,11 +518,31 @@ func pushAllEnergySensors(httpClinet *http.Client, usage, cost, annualUsage floa
 	time.Sleep(800 * time.Millisecond)
 	log.Println("Sleep a while...")
 
-	// 燃气费用
-	log.Println("Tring to push enecle_last_mon_cost")
-	if err := pushEnergySensor("sensor.enecle_last_mon_cost", cost, "JPY", "monetary"); err != nil {
+	// current month request cost
+	log.Println("Tring to push enecle_request_cost")
+	if err := pushEnergySensor("sensor.enecle_request_cost", requesrt_cost, "JPY", "monetary"); err != nil {
 		return err
 	}
+	// ################## request data. ##################
+
+	// ################## last month data. ##################
+	// current month request usage
+	log.Println("Tring to push enecle_last_mon_usage")
+	if err := pushEnergySensor("sensor.enecle_last_mon_usage", last_mon_usage, "kWh", "energy"); err != nil {
+		return err
+	}
+
+	// sleep a while
+	time.Sleep(800 * time.Millisecond)
+	log.Println("Sleep a while...")
+
+	// current month request cost
+	log.Println("Tring to push enecle_last_mon_cost")
+	if err := pushEnergySensor("sensor.enecle_last_mon_cost", last_mon_cost, "JPY", "monetary"); err != nil {
+		return err
+	}
+
+	// ################## last month data. ##################
 
 	// sleep a while
 	time.Sleep(800 * time.Millisecond)
@@ -454,4 +561,51 @@ func pushAllEnergySensors(httpClinet *http.Client, usage, cost, annualUsage floa
 	// }
 
 	return nil
+}
+
+// extractLinks 从 HTML 内容中提取所有 a 标签的文字和链接
+func extractLinks(htmlContent string) ([]map[string]string, error) {
+	doc, err := html.Parse(strings.NewReader(htmlContent))
+	if err != nil {
+		return nil, fmt.Errorf("解析HTML失败: %v", err)
+	}
+
+	var links []map[string]string
+	var f func(*html.Node)
+	f = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "a" {
+			var href string
+			for _, attr := range n.Attr {
+				if attr.Key == "href" {
+					href = attr.Val
+					break
+				}
+			}
+			if href != "" {
+				text := extractText(n)
+				links = append(links, map[string]string{
+					"text": text,
+					"href": href,
+				})
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
+	}
+	f(doc)
+
+	return links, nil
+}
+
+// 提取节点中的纯文本
+func extractText(n *html.Node) string {
+	if n.Type == html.TextNode {
+		return strings.TrimSpace(n.Data)
+	}
+	var result string
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		result += extractText(c)
+	}
+	return strings.TrimSpace(result)
 }
