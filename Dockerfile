@@ -32,11 +32,11 @@ LABEL \
 ARG APP_VERSION BUILD_ARCH
 
 RUN echo "going to download bin file."
-RUN echo "https://github.com/weixiangmeng521/ha-myenecle/releases/latest/download/enecle-linux-${BUILD_ARCH}"
+RUN echo "https://github.com/weixiangmeng521/ha-myenecle/releases/download/v5.0.8/enecle-linux-${BUILD_ARCH}"
 
 RUN \
     curl -L -o /usr/bin/myenecle \
-    "https://github.com/weixiangmeng521/ha-myenecle/releases/latest/download/enecle-linux-${BUILD_ARCH}" \
+    "https://github.com/weixiangmeng521/ha-myenecle/releases/download/v5.0.8/enecle-linux-${BUILD_ARCH}" \
     && chmod +x /usr/bin/myenecle \
     && echo "✅ myenecle downloaded" \
     && ls -lh /usr/bin/myenecle
