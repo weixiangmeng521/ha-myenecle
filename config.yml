@@ -1,6 +1,6 @@
 name: "Enecle エネクル"
 description: "Unofficial add-on for Enecle (エネクル) gas monitoring service."
-version: "1.6.6"
+version: "1.6.7"
 slug: "enecle"
 init: false
 arch:
@@ -10,6 +10,8 @@ arch:
   - armv7
   - i386
 startup: services
+auth_api: true
+hassio_api: true
 options:
   username: ""
   password: ""
