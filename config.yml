@@ -1,6 +1,6 @@
 name: "Enecle エネクル"
 description: "Unofficial add-on for Enecle (エネクル) gas monitoring service."
-version: "1.6.9"
+version: "1.7.0"
 slug: "enecle"
 init: false
 arch:
@@ -9,6 +9,8 @@ arch:
   - armhf
   - armv7
   - i386
+services:
+  - type: mqtt
 startup: services
 auth_api: true
 host_network: true
@@ -20,3 +22,4 @@ options:
 schema:
   username: str
   password: password
+  
