@@ -23,11 +23,8 @@ import (
 )
 
 const (
-	Broker   = "mqtt://core-mosquitto:1883"
-	ClientID = "myenecle-clinet"
-)
-
-var (
+	Broker       = "mqtt://core-mosquitto:1883"
+	ClientID     = "myenecle-clinet"
 	MOS_USERNAME = "addons"
 	MOS_PASSWORD = "aiteab5elia9hee9ahp5chaoG1aegohcahzie9iigaewiaPeiquu1lau9Ho5Ooje"
 )
@@ -41,8 +38,8 @@ func main() {
 	flag.StringVar(&password, "p", "", "-p password")
 	flag.Parse()
 
-	if username == "" || password == "" || MOS_USERNAME == "" || MOS_PASSWORD == "" {
-		log.Fatal("missing USERNAME, PASSWORD, MOS_PASSWORD, MOS_PASSWORD")
+	if username == "" || password == "" {
+		log.Fatal("missing USERNAME, PASSWORD")
 	}
 
 	if runtime.GOOS == "darwin" {
