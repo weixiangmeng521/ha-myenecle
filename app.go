@@ -24,9 +24,12 @@ import (
 
 const (
 	Broker   = "mqtt://core-mosquitto:1883"
-	Username = "addons"
-	Password = "aiteab5elia9hee9ahp5chaoG1aegohcahzie9iigaewiaPeiquu1lau9Ho5Ooje"
 	ClientID = "myenecle-clinet"
+)
+
+var (
+	MOS_USERNAME = "addons"
+	MOS_PASSWORD = "aiteab5elia9hee9ahp5chaoG1aegohcahzie9iigaewiaPeiquu1lau9Ho5Ooje"
 )
 
 var mqttClient mqtt.Client
@@ -38,11 +41,11 @@ func main() {
 	flag.StringVar(&password, "p", "", "-p password")
 	flag.Parse()
 
-	if username == "" || password == "" {
-		log.Fatal("missing USERNAME, PASSWORD")
+	if username == "" || password == "" || MOS_USERNAME == "" || MOS_PASSWORD == "" {
+		log.Fatal("missing USERNAME, PASSWORD, MOS_PASSWORD, MOS_PASSWORD")
 	}
 
-	if runtime.GOOS != "darwin" {
+	if runtime.GOOS == "darwin" {
 		log.Println("Test env.")
 		mqttClient = newMQTTClient()
 		defer mqttClient.Disconnect(250)
@@ -174,7 +177,7 @@ func task(username string, password string) {
 		log.Println("Push message to sensor err: ", err)
 	}
 
-	if runtime.GOOS != "darwin" {
+	if runtime.GOOS == "darwin" {
 		defer mqttClient.Disconnect(250)
 	}
 }
@@ -493,8 +496,8 @@ func monthToNumber(m string) int {
 func newMQTTClient() mqtt.Client {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(Broker)
-	opts.SetUsername(Username)
-	opts.SetPassword(Password)
+	opts.SetUsername(MOS_USERNAME)
+	opts.SetPassword(MOS_PASSWORD)
 	opts.SetClientID(ClientID)
 	opts.SetConnectTimeout(5 * time.Second)
 
