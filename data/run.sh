@@ -47,6 +47,11 @@ while true; do
     export TEPCO2MQTT_CONFIG_MQTT_PASSWORD
 
     # excute
-    /usr/bin/myenecle -u "$CONFIG_USERNAME" -p "$CONFIG_PASSWORD" -mqtt_username "$TEPCO2MQTT_CONFIG_MQTT_USERNAME" -mqtt_password "$TEPCO2MQTT_CONFIG_MQTT_PASSWORD"
+/usr/bin/myenecle \
+    -u "$CONFIG_USERNAME" \
+    -p "$CONFIG_PASSWORD" \
+    -mqtt_username "$TEPCO2MQTT_CONFIG_MQTT_USERNAME" \
+    -mqtt_password "$TEPCO2MQTT_CONFIG_MQTT_PASSWORD"
+    
     sleep 3600
 done
