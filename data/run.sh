@@ -21,13 +21,12 @@ EOF
 
 
 while true; do
-    username=$(bashio::config 'username')
-    password=$(bashio::config 'password')
-    # set env
-    export USERNAME="$username"
-    export PASSWORD="$password"
+    CONFIG_USERNAME=$(bashio::config 'username')
+    CONFIG_PASSWORD=$(bashio::config 'password')
+    TEPCO2MQTT_CONFIG_MQTT_USERNAME="$(bashio::services 'mqtt' 'username')"
+    TEPCO2MQTT_CONFIG_MQTT_PASSWORD="$(bashio::services 'mqtt' 'password')"    
 
     # excute
-    /usr/bin/myenecle -u "$username" -p "$password"
+    /usr/bin/myenecle -u "$CONFIG_USERNAME" -p "$CONFIG_PASSWORD" -p "$TEPCO2MQTT_CONFIG_MQTT_USERNAME" -p "$TEPCO2MQTT_CONFIG_MQTT_PASSWORD"
     sleep 3600
 done

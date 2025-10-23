@@ -23,10 +23,13 @@ import (
 )
 
 const (
-	Broker       = "mqtt://core-mosquitto:1883"
-	ClientID     = "myenecle-clinet"
-	MOS_USERNAME = "addons"
-	MOS_PASSWORD = "aiteab5elia9hee9ahp5chaoG1aegohcahzie9iigaewiaPeiquu1lau9Ho5Ooje"
+	Broker   = "mqtt://core-mosquitto:1883"
+	ClientID = "myenecle-clinet"
+)
+
+var (
+	TEPCO2MQTT_CONFIG_MQTT_USERNAME string
+	TEPCO2MQTT_CONFIG_MQTT_PASSWORD string
 )
 
 var mqttClient mqtt.Client
@@ -36,18 +39,13 @@ func main() {
 	var password string
 	flag.StringVar(&username, "u", "", "-u username")
 	flag.StringVar(&password, "p", "", "-p password")
+	flag.StringVar(&TEPCO2MQTT_CONFIG_MQTT_USERNAME, "mqtt_username", "", "-mqtt_username password")
+	flag.StringVar(&TEPCO2MQTT_CONFIG_MQTT_PASSWORD, "mqtt_password", "", "-mqtt_password password")
 	flag.Parse()
 
-	if username == "" || password == "" {
-		log.Fatal("missing USERNAME, PASSWORD")
+	if username == "" || password == "" || TEPCO2MQTT_CONFIG_MQTT_USERNAME == "" || TEPCO2MQTT_CONFIG_MQTT_PASSWORD == "" {
+		log.Fatal("missing USERNAME, PASSWORD, TEPCO2MQTT_CONFIG_MQTT_PASSWORD, TEPCO2MQTT_CONFIG_MQTT_USERNAME")
 	}
-
-	if runtime.GOOS == "darwin" {
-		log.Println("Test env.")
-		mqttClient = newMQTTClient()
-		defer mqttClient.Disconnect(250)
-	}
-
 	// 启动时先跑一次（可删）
 	task(username, password)
 
@@ -172,10 +170,6 @@ func task(username string, password string) {
 	log.Println("Going to push data at: ", time.Now())
 	if err := pushAllEnergySensors(httpClinet, request_usage, request_cost, last_mon_usage, last_mon_cost, total, usages); err != nil {
 		log.Println("Push message to sensor err: ", err)
-	}
-
-	if runtime.GOOS == "darwin" {
-		defer mqttClient.Disconnect(250)
 	}
 }
 
@@ -373,6 +367,7 @@ func pushEnergySensor(entity string, state float64, unit, deviceClass string) er
 	}
 	if mqttClient == nil {
 		mqttClient = newMQTTClient()
+		defer mqttClient.Disconnect(250)
 	}
 
 	// 计算 unique_id / device.identifiers
@@ -493,8 +488,8 @@ func monthToNumber(m string) int {
 func newMQTTClient() mqtt.Client {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(Broker)
-	opts.SetUsername(MOS_USERNAME)
-	opts.SetPassword(MOS_PASSWORD)
+	opts.SetUsername(TEPCO2MQTT_CONFIG_MQTT_USERNAME)
+	opts.SetPassword(TEPCO2MQTT_CONFIG_MQTT_PASSWORD)
 	opts.SetClientID(ClientID)
 	opts.SetConnectTimeout(5 * time.Second)
 
