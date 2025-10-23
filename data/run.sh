@@ -26,8 +26,10 @@ while true; do
     TEPCO2MQTT_CONFIG_MQTT_USERNAME="$(bashio::services 'mqtt' 'username')"
     TEPCO2MQTT_CONFIG_MQTT_PASSWORD="$(bashio::services 'mqtt' 'password')"    
 
-    bashio::log.info "MQTT username: ${TEPCO2MQTT_CONFIG_MQTT_USERNAME}"
-    bashio::log.info "MQTT password length: ${#TEPCO2MQTT_CONFIG_MQTT_PASSWORD}"
+    echo "======================================================="
+    echo "MQTT username: ${TEPCO2MQTT_CONFIG_MQTT_USERNAME}"
+    echo "MQTT password length: ${#TEPCO2MQTT_CONFIG_MQTT_PASSWORD}"
+    echo "======================================================="
 
     # excute
     /usr/bin/myenecle -u "$CONFIG_USERNAME" -p "$CONFIG_PASSWORD" -p "$TEPCO2MQTT_CONFIG_MQTT_USERNAME" -p "$TEPCO2MQTT_CONFIG_MQTT_PASSWORD"
