@@ -365,11 +365,6 @@ func pushEnergySensor(entity string, state float64, unit, deviceClass string) er
 		log.Println("dont need to push data")
 		return nil
 	}
-	if mqttClient == nil {
-		mqttClient = newMQTTClient()
-		defer mqttClient.Disconnect(250)
-	}
-
 	// 计算 unique_id / device.identifiers
 	hash := fmt.Sprintf("%x", md5.Sum([]byte(entity+deviceClass)))
 	uniqueID := hash[:8]
@@ -502,6 +497,11 @@ func newMQTTClient() mqtt.Client {
 
 // pushAllEnergySensors 推送燃气用量、费用、年度累计三个传感器
 func pushAllEnergySensors(httpClinet *http.Client, request_usage, requesrt_cost, last_mon_usage, last_mon_cost, annualUsage float64, usages []MonthlyUsage) error {
+	if mqttClient == nil {
+		mqttClient = newMQTTClient()
+		defer mqttClient.Disconnect(250)
+	}
+
 	// ################## request data. ##################
 	// current month request usage
 	log.Println("Tring to push enecle_request_usage")
@@ -554,7 +554,6 @@ func pushAllEnergySensors(httpClinet *http.Client, request_usage, requesrt_cost,
 	// if err != nil {
 	// 	return err
 	// }
-
 	return nil
 }
 
