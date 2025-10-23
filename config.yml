@@ -1,6 +1,6 @@
 name: "Enecle エネクル"
 description: "Unofficial add-on for Enecle (エネクル) gas monitoring service."
-version: "1.7.9"
+version: "1.8.0"
 slug: "enecle"
 init: false
 arch:
