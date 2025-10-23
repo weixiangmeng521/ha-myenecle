@@ -35,7 +35,7 @@ RUN echo "going to download bin file."
 
 RUN \
     curl -L -o /usr/bin/myenecle \
-    "https://github.com/weixiangmeng521/ha-myenecle/releases/download/v5.0.9/enecle-linux-${BUILD_ARCH}" \
+    "https://github.com/weixiangmeng521/ha-myenecle/releases/download/v5.1.0/enecle-linux-${BUILD_ARCH}" \
     && chmod +x /usr/bin/myenecle \
     && echo "✅ myenecle downloaded" \
     && ls -lh /usr/bin/myenecle
