@@ -1,6 +1,6 @@
 name: "Enecle エネクル"
 description: "Unofficial add-on for Enecle (エネクル) gas monitoring service."
-version: "1.7.1"
+version: "1.7.2"
 slug: "enecle"
 init: false
 arch:
@@ -12,9 +12,9 @@ arch:
 startup: services
 discovery:
   - myenecle
-auth_api: true
-host_network: true
 hassio_api: true  
+services:
+  - mqtt:need
 options:
   username: ""
   password: ""
