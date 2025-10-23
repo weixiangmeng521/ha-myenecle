@@ -9,13 +9,10 @@ arch:
   - armhf
   - armv7
   - i386
-services:
-  - type: mqtt
 startup: services
 auth_api: true
 host_network: true
 hassio_api: true
-hassio_role: manager
 options:
   username: ""
   password: ""
