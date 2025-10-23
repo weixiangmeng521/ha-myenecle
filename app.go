@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -34,6 +34,20 @@ var (
 
 var mqttClient mqtt.Client
 
+// is local debug envoriment
+func isLocal() bool {
+	_, err := os.Stat(".local") // 检查当前目录下 .local 文件
+	if err == nil {
+		return true // 文件存在
+	}
+	if os.IsNotExist(err) {
+		return false // 文件不存在
+	}
+	// 其他错误
+	fmt.Println("Error checking .local file:", err)
+	return false
+}
+
 func main() {
 	var username string
 	var password string
@@ -46,6 +60,15 @@ func main() {
 	if username == "" || password == "" || TEPCO2MQTT_CONFIG_MQTT_USERNAME == "" || TEPCO2MQTT_CONFIG_MQTT_PASSWORD == "" {
 		log.Fatal("missing USERNAME, PASSWORD, TEPCO2MQTT_CONFIG_MQTT_PASSWORD, TEPCO2MQTT_CONFIG_MQTT_USERNAME")
 	}
+
+	mqttClient = newMQTTClient()
+	defer func() {
+		if mqttClient != nil {
+			mqttClient.Disconnect(250)
+			mqttClient = nil
+		}
+	}()
+
 	// 启动时先跑一次（可删）
 	task(username, password)
 
@@ -361,7 +384,7 @@ func extractAnnualUsage(htmlBody string) float64 {
 // pushEnergySensor 推送一个能源面板可识别的传感器
 // https://www.mqtt.cn/1101.html
 func pushEnergySensor(entity string, state float64, unit, deviceClass string) error {
-	if runtime.GOOS == "darwin" {
+	if isLocal() {
 		log.Println("dont need to push data")
 		return nil
 	}
@@ -481,6 +504,10 @@ func monthToNumber(m string) int {
 
 // MQTT 客户端初始化示例
 func newMQTTClient() mqtt.Client {
+	if isLocal() {
+		log.Println("dev env.")
+		return nil
+	}
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(Broker)
 	opts.SetUsername(TEPCO2MQTT_CONFIG_MQTT_USERNAME)
@@ -497,11 +524,6 @@ func newMQTTClient() mqtt.Client {
 
 // pushAllEnergySensors 推送燃气用量、费用、年度累计三个传感器
 func pushAllEnergySensors(httpClinet *http.Client, request_usage, requesrt_cost, last_mon_usage, last_mon_cost, annualUsage float64, usages []MonthlyUsage) error {
-	if mqttClient == nil {
-		mqttClient = newMQTTClient()
-		defer mqttClient.Disconnect(250)
-	}
-
 	// ################## request data. ##################
 	// current month request usage
 	log.Println("Tring to push enecle_request_usage")

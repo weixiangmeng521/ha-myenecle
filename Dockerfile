@@ -32,7 +32,6 @@ LABEL \
 ARG APP_VERSION BUILD_ARCH
 
 RUN echo "going to download bin file."
-RUN echo "https://github.com/weixiangmeng521/ha-myenecle/releases/download/v5.0.9/enecle-linux-${BUILD_ARCH}"
 
 RUN \
     curl -L -o /usr/bin/myenecle \
